@@ -25,6 +25,7 @@ common comm
     PatternSynonyms
     QuantifiedConstraints
     RankNTypes
+    RecordWildCards
     RoleAnnotations
     ScopedTypeVariables
     StandaloneDeriving
@@ -52,8 +53,8 @@ flag plutus-ledger
   description:
     Provide @Plutonomy.TypedScripts@ & @plutus-ledger@ functionality.
 
-  manual: True
-  default: False
+  manual:      True
+  default:     False
 
 library
   import:            comm
@@ -113,11 +114,8 @@ library
     , plutus-tx
 
   if flag(plutus-ledger)
-    build-depends:
-      , plutus-ledger
-
-    exposed-modules:
-      Plutonomy.TypedScripts
+    build-depends:   plutus-ledger
+    exposed-modules: Plutonomy.TypedScripts
 
   if flag(plutus-1efbb276e)
     build-depends: dependent-sum-template
@@ -137,3 +135,17 @@ library
 
     if flag(plutus-4710dff2e)
       cpp-options: -DPLUTUS_VER=2
+
+test-suite plutonomy-tests
+  import:         comm
+  type:           exitcode-stdio-1.0
+  main-is:        plutonomy-tests.hs
+  hs-source-dirs: tests
+  other-modules:  MultiSig
+  build-depends:
+    , base
+    , plutonomy
+    , plutus-ledger-api
+    , plutus-tx
+    , plutus-tx-plugin
+    , tasty

@@ -1,0 +1,280 @@
+let* equalsInteger_3 = equalsInteger# 3#
+     equalsInteger_2 = equalsInteger# 2#
+     equalsInteger_1 = equalsInteger# 1#
+     equalsInteger_0 = equalsInteger# 0#
+     fix = \ f -> let* rec = \ rec0 arg -> f (rec0 rec0) arg in rec rec
+     ~id = \ ~ y -> y
+     foldr = fix (\ foldr_0 arg_0 ~ ~ f_0 acc l -> l ! (\ ~ -> acc) (\ x xs ~ -> f_0 x (foldr_0 ~id ! ! f_0 acc xs)) !)
+     mempty! = \ v -> v ! (\ u2 v2 -> v2)
+     const = \ u1 v1 -> u1
+     fFoldableNil_cfoldMap = fix (\ fFoldableNil_cfoldMap_0 arg_1 ~ ~ dMonoid ds ds_0 -> ds_0 ! (\ ~ -> mempty! dMonoid) (\ x_0 xs_0 ~ -> dMonoid ! const (ds x_0) (fFoldableNil_cfoldMap_0 ~id ! ! dMonoid ds xs_0)) !)
+     Cons! = \ arg_0 arg_1 ~ case_Nil case_Cons -> case_Cons arg_0 arg_1
+     Tuple2 = \ fst snd ~ case_Tuple2 -> case_Tuple2 fst snd
+     Just = \ justArg ~ case_Just case_Nothing -> case_Just justArg
+     False = \ ~ true4 false4 -> false4
+     ~False = \ ~ -> False
+     True = \ ~ -> const
+     ~True = \ ~ -> True
+     fUnsafeFromDataTxId_cunsafeFromBuiltinData = \ d -> let* tup! = unConstrData# d in ifThenElse# ! (equalsInteger_0 (fstPair# ! ! tup!)) (\ ~ -> unBData# (headList# ! (sndPair# ! ! tup!))) (\ ~ -> ERROR) !
+     fUnsafeFromDataTxOutRef_cunsafeFromBuiltinData =
+       \ d_0 ->
+         let* tup!_0 = unConstrData# d_0
+         in ifThenElse# ! (equalsInteger_0 (fstPair# ! ! tup!_0)) (\ ~ -> let* t! = sndPair# ! ! tup!_0 in Tuple2 (fUnsafeFromDataTxId_cunsafeFromBuiltinData (headList# ! t!)) (unIData# (headList# ! (tailList# ! t!)))) (\ ~ -> ERROR) !
+     fUnsafeFromDataCredential_cunsafeFromBuiltinData =
+       \ d_1 ->
+         let* tup!_1 = unConstrData# d_1
+              index! = fstPair# ! ! tup!_1
+         in ifThenElse# !
+              (equalsInteger_1 index!)
+              (\ ~ -> let* arg_0_0 = unBData# (headList# ! (sndPair# ! ! tup!_1)) in \ ~ case_PubKeyCredential case_ScriptCredential -> case_ScriptCredential arg_0_0)
+              (\ ~ -> ifThenElse# ! (equalsInteger_0 index!) (\ ~ -> Just (unBData# (headList# ! (sndPair# ! ! tup!_1)))) (\ ~ -> ERROR) !)
+              !
+     fUnsafeFromDataStakingCredential_cunsafeFromBuiltinData =
+       \ d_2 ->
+         let* tup!_2 = unConstrData# d_2
+              index!_0 = fstPair# ! ! tup!_2
+         in ifThenElse# !
+              (equalsInteger_1 index!_0)
+              (\ ~ ->
+                 let* t!_0 = sndPair# ! ! tup!_2
+                      arg_0_1 = unIData# (headList# ! t!_0)
+                      t!_1 = tailList# ! t!_0
+                      arg_1_0 = unIData# (headList# ! t!_1)
+                      arg_2 = unIData# (headList# ! (tailList# ! t!_1))
+                 in \ ~ case_StakingHash case_StakingPtr -> case_StakingPtr arg_0_1 arg_1_0 arg_2)
+              (\ ~ -> ifThenElse# ! (equalsInteger_0 index!_0) (\ ~ -> Just (fUnsafeFromDataCredential_cunsafeFromBuiltinData (headList# ! (sndPair# ! ! tup!_2)))) (\ ~ -> ERROR) !)
+              !
+     fUnsafeFromDataDCert_cunsafeFromBuiltinData =
+       \ d_3 ->
+         let* tup!_3 = unConstrData# d_3
+              index!_1 = fstPair# ! ! tup!_3
+              t = \ ~ -> sndPair# ! ! tup!_3
+         in ifThenElse# !
+              (equalsInteger# 6# index!_1)
+              (\ ~ ~ case_DCertDelegDeRegKey case_DCertDelegDelegate case_DCertDelegRegKey case_DCertGenesis m1 n1 p1 -> m1)
+              (\ ~ ->
+                 ifThenElse# !
+                   (equalsInteger# 5# index!_1)
+                   (\ ~ ~ case_DCertDelegDeRegKey_0 case_DCertDelegDelegate_0 case_DCertDelegRegKey_0 case_DCertGenesis_0 case_DCertMir case_DCertPoolRegister case_DCertPoolRetire -> case_DCertGenesis_0)
+                   (\ ~ ->
+                      ifThenElse# !
+                        (equalsInteger# 4# index!_1)
+                        (\ ~ ->
+                           let* arg_0_2 = unBData# (headList# ! (t !))
+                                arg_1_1 = unIData# (headList# ! (tailList# ! (t !)))
+                           in \ ~ case_DCertDelegDeRegKey_1 case_DCertDelegDelegate_1 case_DCertDelegRegKey_1 case_DCertGenesis_1 case_DCertMir_0 case_DCertPoolRegister_0 case_DCertPoolRetire_0 -> case_DCertPoolRetire_0 arg_0_2 arg_1_1)
+                        (\ ~ ->
+                           ifThenElse# !
+                             (equalsInteger_3 index!_1)
+                             (\ ~ ->
+                                let* arg_0_3 = unBData# (headList# ! (t !))
+                                     arg_1_2 = unBData# (headList# ! (tailList# ! (t !)))
+                                in \ ~ case_DCertDelegDeRegKey_2 case_DCertDelegDelegate_2 case_DCertDelegRegKey_2 case_DCertGenesis_2 case_DCertMir_1 case_DCertPoolRegister_1 case_DCertPoolRetire_1 -> case_DCertPoolRegister_1 arg_0_3 arg_1_2)
+                             (\ ~ ->
+                                ifThenElse# !
+                                  (equalsInteger_2 index!_1)
+                                  (\ ~ ->
+                                     let* arg_0_4 = fUnsafeFromDataStakingCredential_cunsafeFromBuiltinData (headList# ! (t !))
+                                          arg_1_3 = unBData# (headList# ! (tailList# ! (t !)))
+                                     in \ ~ case_DCertDelegDeRegKey_3 case_DCertDelegDelegate_3 case_DCertDelegRegKey_3 case_DCertGenesis_3 case_DCertMir_2 case_DCertPoolRegister_2 case_DCertPoolRetire_2 -> case_DCertDelegDelegate_3 arg_0_4 arg_1_3)
+                                  (\ ~ ->
+                                     ifThenElse# !
+                                       (equalsInteger_1 index!_1)
+                                       (\ ~ ->
+                                          let* arg_0_5 = fUnsafeFromDataStakingCredential_cunsafeFromBuiltinData (headList# ! (sndPair# ! ! tup!_3))
+                                          in \ ~ case_DCertDelegDeRegKey_4 case_DCertDelegDelegate_4 case_DCertDelegRegKey_4 case_DCertGenesis_4 case_DCertMir_3 case_DCertPoolRegister_3 case_DCertPoolRetire_3 -> case_DCertDelegDeRegKey_4 arg_0_5)
+                                       (\ ~ ->
+                                          ifThenElse# !
+                                            (equalsInteger_0 index!_1)
+                                            (\ ~ ->
+                                               let* arg_0_6 = fUnsafeFromDataStakingCredential_cunsafeFromBuiltinData (headList# ! (sndPair# ! ! tup!_3))
+                                               in \ ~ case_DCertDelegDeRegKey_5 case_DCertDelegDelegate_5 case_DCertDelegRegKey_5 case_DCertGenesis_5 case_DCertMir_4 case_DCertPoolRegister_4 case_DCertPoolRetire_4 -> case_DCertDelegRegKey_5 arg_0_6)
+                                            (\ ~ -> ERROR)
+                                            !)
+                                       !)
+                                  !)
+                             !)
+                        !)
+                   !)
+              !
+     fUnsafeFromDataNil_cunsafeFromBuiltinData! =
+       \ dUnsafeFromData -> let* go = fix (\ go_0 l_0 -> chooseList# ! ! l_0 (\ ds_1 -> True) (\ ds_2 -> Cons! (dUnsafeFromData (headList# ! l_0)) (go_0 (tailList# ! l_0))) ~id) in \ d_4 -> go (unListData# d_4)
+     fUnsafeFromDataMap_cunsafeFromBuiltinData!! =
+       \ dUnsafeFromData_0 dUnsafeFromData_1 ->
+         let* go_1 = fix (\ go_2 l_1 -> chooseList# ! ! l_1 (\ ds_3 -> True) (\ ds_4 -> let* tup!_4 = headList# ! l_1 in Cons! (Tuple2 (dUnsafeFromData_0 (fstPair# ! ! tup!_4)) (dUnsafeFromData_1 (sndPair# ! ! tup!_4))) (go_2 (tailList# ! l_1))) ~id)
+         in \ d_5 -> go_1 (unMapData# d_5)
+     fUnsafeFromDataMaybe_cunsafeFromBuiltinData! =
+       \ dUnsafeFromData_2 d_6 ->
+         let* tup!_5 = unConstrData# d_6
+              index!_2 = fstPair# ! ! tup!_5
+         in ifThenElse# ! (equalsInteger_0 index!_2) (\ ~ -> Just (dUnsafeFromData_2 (headList# ! (sndPair# ! ! tup!_5)))) (\ ~ -> ifThenElse# ! (equalsInteger_1 index!_2) ~False (\ ~ -> ERROR) !) !
+     fUnsafeFromDataTuple2_cunsafeFromBuiltinData!! =
+       \ dUnsafeFromData_3 dUnsafeFromData_4 d_7 ->
+         let* tup!_6 = unConstrData# d_7
+         in ifThenElse# ! (equalsInteger_0 (fstPair# ! ! tup!_6)) (\ ~ -> let* t!_2 = sndPair# ! ! tup!_6 in Tuple2 (dUnsafeFromData_3 (headList# ! t!_2)) (dUnsafeFromData_4 (headList# ! (tailList# ! t!_2)))) (\ ~ -> ERROR) !
+     fUnsafeFromDataExtended_cunsafeFromBuiltinData! =
+       \ dUnsafeFromData_5 d_8 ->
+         let* tup!_7 = unConstrData# d_8
+              index!_3 = fstPair# ! ! tup!_7
+         in ifThenElse# !
+              (equalsInteger_2 index!_3)
+              (\ ~ ~ m9 n9 p9 -> p9)
+              (\ ~ ->
+                 ifThenElse# !
+                   (equalsInteger_1 index!_3)
+                   (\ ~ -> let* arg_0_7 = dUnsafeFromData_5 (headList# ! (sndPair# ! ! tup!_7)) in \ ~ case_Finite case_NegInf case_PosInf -> case_Finite arg_0_7)
+                   (\ ~ -> ifThenElse# ! (equalsInteger_0 index!_3) (\ ~ ~ m8 n8 p8 -> n8) (\ ~ -> ERROR) !)
+                   !)
+              !
+     fUnsafeFromDataBool_cunsafeFromBuiltinData = \ d_9 -> let* index!_4 = fstPair# ! ! (unConstrData# d_9) in ifThenElse# ! (equalsInteger_1 index!_4) ~True (\ ~ -> ifThenElse# ! (equalsInteger_0 index!_4) ~False (\ ~ -> ERROR) !) !
+     v_0 = Tuple2 (\ ds_5 ds_6 x_1 -> ds_5 (ds_6 x_1)) (\ x_2 -> x_2)
+in \ datum redeemer ctx ->
+     let* tup!_8 = unConstrData# ctx
+          w =
+            ifThenElse# !
+              (equalsInteger_0 (fstPair# ! ! tup!_8))
+              (\ ~ ->
+                 let* t!_3 = sndPair# ! ! tup!_8
+                      tup!_9 = unConstrData# (headList# ! t!_3)
+                      tup!_a = unConstrData# (headList# ! (tailList# ! t!_3))
+                      index!_5 = fstPair# ! ! tup!_a
+                 in Tuple2
+                      (ifThenElse# !
+                         (equalsInteger_0 (fstPair# ! ! tup!_9))
+                         (\ ~ ->
+                            let* t!_4 = sndPair# ! ! tup!_9
+                                 t!_5 = tailList# ! t!_4
+                                 t!_6 = tailList# ! t!_5
+                                 t!_7 = tailList# ! t!_6
+                                 t!_8 = tailList# ! t!_7
+                                 t!_9 = tailList# ! t!_8
+                                 t!_a = tailList# ! t!_9
+                                 tup!_b = unConstrData# (headList# ! t!_a)
+                                 fUnsafeFromDataValue! = fUnsafeFromDataMap_cunsafeFromBuiltinData!! unBData# unIData#
+                                 fUnsafeFromDataTxOut_cunsafeFromBuiltinData =
+                                   \ d_a ->
+                                     let* tup!_c = unConstrData# d_a
+                                     in ifThenElse# !
+                                          (equalsInteger_0 (fstPair# ! ! tup!_c))
+                                          (\ ~ ->
+                                             let* t!_b = sndPair# ! ! tup!_c
+                                                  tup!_d = unConstrData# (headList# ! t!_b)
+                                                  arg_0_8 =
+                                                    ifThenElse# !
+                                                      (equalsInteger_0 (fstPair# ! ! tup!_d))
+                                                      (\ ~ ->
+                                                         let* t!_c = sndPair# ! ! tup!_d
+                                                         in Tuple2
+                                                              (fUnsafeFromDataCredential_cunsafeFromBuiltinData (headList# ! t!_c))
+                                                              (fUnsafeFromDataMaybe_cunsafeFromBuiltinData! fUnsafeFromDataStakingCredential_cunsafeFromBuiltinData (headList# ! (tailList# ! t!_c))))
+                                                      (\ ~ -> ERROR)
+                                                      !
+                                                  t!_d = tailList# ! t!_b
+                                                  arg_1_4 = fUnsafeFromDataMap_cunsafeFromBuiltinData!! unBData# fUnsafeFromDataValue! (headList# ! t!_d)
+                                                  arg_2_0 = fUnsafeFromDataMaybe_cunsafeFromBuiltinData! unBData# (headList# ! (tailList# ! t!_d))
+                                             in \ ~ case_TxOut -> case_TxOut arg_0_8 arg_1_4 arg_2_0)
+                                          (\ ~ -> ERROR)
+                                          !
+                                 arg_0_9 =
+                                   fUnsafeFromDataNil_cunsafeFromBuiltinData!
+                                     (\ d_b ->
+                                        let* tup!_e = unConstrData# d_b
+                                        in ifThenElse# !
+                                             (equalsInteger_0 (fstPair# ! ! tup!_e))
+                                             (\ ~ -> let* t!_e = sndPair# ! ! tup!_e in Tuple2 (fUnsafeFromDataTxOutRef_cunsafeFromBuiltinData (headList# ! t!_e)) (fUnsafeFromDataTxOut_cunsafeFromBuiltinData (headList# ! (tailList# ! t!_e))))
+                                             (\ ~ -> ERROR)
+                                             !)
+                                     (headList# ! t!_4)
+                                 arg_1_5 = fUnsafeFromDataNil_cunsafeFromBuiltinData! fUnsafeFromDataTxOut_cunsafeFromBuiltinData (headList# ! t!_5)
+                                 arg_2_1 = fUnsafeFromDataMap_cunsafeFromBuiltinData!! unBData# fUnsafeFromDataValue! (headList# ! t!_6)
+                                 arg_3 = fUnsafeFromDataMap_cunsafeFromBuiltinData!! unBData# fUnsafeFromDataValue! (headList# ! t!_7)
+                                 arg_4 = fUnsafeFromDataNil_cunsafeFromBuiltinData! fUnsafeFromDataDCert_cunsafeFromBuiltinData (headList# ! t!_8)
+                                 arg_5 = fUnsafeFromDataNil_cunsafeFromBuiltinData! (fUnsafeFromDataTuple2_cunsafeFromBuiltinData!! fUnsafeFromDataStakingCredential_cunsafeFromBuiltinData unIData#) (headList# ! t!_9)
+                                 arg_6 =
+                                   ifThenElse# !
+                                     (equalsInteger_0 (fstPair# ! ! tup!_b))
+                                     (\ ~ ->
+                                        let* t!_f = sndPair# ! ! tup!_b
+                                             tup!_f = unConstrData# (headList# ! t!_f)
+                                             tup!_g = unConstrData# (headList# ! (tailList# ! t!_f))
+                                        in Tuple2
+                                             (ifThenElse# !
+                                                (equalsInteger_0 (fstPair# ! ! tup!_f))
+                                                (\ ~ ->
+                                                   let* t!_g = sndPair# ! ! tup!_f
+                                                   in Tuple2 (fUnsafeFromDataExtended_cunsafeFromBuiltinData! unIData# (headList# ! t!_g)) (fUnsafeFromDataBool_cunsafeFromBuiltinData (headList# ! (tailList# ! t!_g))))
+                                                (\ ~ -> ERROR)
+                                                !)
+                                             (ifThenElse# !
+                                                (equalsInteger_0 (fstPair# ! ! tup!_g))
+                                                (\ ~ ->
+                                                   let* t!_h = sndPair# ! ! tup!_g
+                                                   in Tuple2 (fUnsafeFromDataExtended_cunsafeFromBuiltinData! unIData# (headList# ! t!_h)) (fUnsafeFromDataBool_cunsafeFromBuiltinData (headList# ! (tailList# ! t!_h))))
+                                                (\ ~ -> ERROR)
+                                                !))
+                                     (\ ~ -> ERROR)
+                                     !
+                                 t!_i = tailList# ! t!_a
+                                 arg_7 = fUnsafeFromDataNil_cunsafeFromBuiltinData! unBData# (headList# ! t!_i)
+                                 t!_j = tailList# ! t!_i
+                                 arg_8 = fUnsafeFromDataNil_cunsafeFromBuiltinData! (fUnsafeFromDataTuple2_cunsafeFromBuiltinData!! unBData# (\ x_3 -> x_3)) (headList# ! t!_j)
+                                 arg_9 = fUnsafeFromDataTxId_cunsafeFromBuiltinData (headList# ! (tailList# ! t!_j))
+                            in \ ~ case_TxInfo -> case_TxInfo arg_0_9 arg_1_5 arg_2_1 arg_3 arg_4 arg_5 arg_6 arg_7 arg_8 arg_9)
+                         (\ ~ -> ERROR)
+                         !)
+                      (ifThenElse# !
+                         (equalsInteger_3 index!_5)
+                         (\ ~ -> let* arg_0_a = fUnsafeFromDataDCert_cunsafeFromBuiltinData (headList# ! (sndPair# ! ! tup!_a)) in \ ~ case_Certifying case_Minting case_Rewarding case_Spending -> case_Certifying arg_0_a)
+                         (\ ~ ->
+                            ifThenElse# !
+                              (equalsInteger_2 index!_5)
+                              (\ ~ -> let* arg_0_b = fUnsafeFromDataStakingCredential_cunsafeFromBuiltinData (headList# ! (sndPair# ! ! tup!_a)) in \ ~ case_Certifying_0 case_Minting_0 case_Rewarding_0 case_Spending_0 -> case_Rewarding_0 arg_0_b)
+                              (\ ~ ->
+                                 ifThenElse# !
+                                   (equalsInteger_1 index!_5)
+                                   (\ ~ -> let* arg_0_c = fUnsafeFromDataTxOutRef_cunsafeFromBuiltinData (headList# ! (sndPair# ! ! tup!_a)) in \ ~ case_Certifying_1 case_Minting_1 case_Rewarding_1 case_Spending_1 -> case_Spending_1 arg_0_c)
+                                   (\ ~ ->
+                                      ifThenElse# !
+                                        (equalsInteger_0 index!_5)
+                                        (\ ~ -> let* arg_0_d = unBData# (headList# ! (sndPair# ! ! tup!_a)) in \ ~ case_Certifying_2 case_Minting_2 case_Rewarding_2 case_Spending_2 -> case_Minting_2 arg_0_d)
+                                        (\ ~ -> ERROR)
+                                        !)
+                                   !)
+                              !)
+                         !))
+              (\ ~ -> ERROR)
+              !
+              !
+              const
+     in ifThenElse# !
+          (lessThanInteger#
+             (fFoldableNil_cfoldMap
+                ~id
+                !
+                !
+                (Tuple2 (\ eta eta_0 -> v_0 ! const eta_0 eta) (mempty! v_0))
+                (\ x_4 y_0 -> addInteger# y_0 1#)
+                (foldr
+                   ~id
+                   !
+                   !
+                   (\ e xs_1 ->
+                      w
+                        !
+                        (\ ww ww_0 ww_1 ww_2 ww_3 ww_4 ww_5 ww_6 ww_7 ww_8 ->
+                           fFoldableNil_cfoldMap ~id ! ! (Tuple2 (\ ds_7 b -> ds_7 ! (\ ipv ~ -> ds_7) (\ ~ -> b) !) False) (\ x_5 -> ifThenElse# ! (equalsByteString# e x_5) (\ ~ -> Just x_5) ~False !) ww_6 ! (\ ds_8 -> ~True) ~False !)
+                        !
+                        (\ ~ -> Cons! e xs_1)
+                        (\ ~ -> xs_1)
+                        !)
+                   True
+                   (Cons! "some-string-which-is-28-long"#b (Cons! "s0me-string-which-is-28-long"#b (Cons! "some-string-which-is-28-l0ng"#b True))))
+                0#)
+             2#)
+          (\ ~ -> False)
+          ~True
+          !
+          !
+          (\ ~ ~ z -> z)
+          (\ ~ -> ERROR)
+          !

@@ -1,0 +1,334 @@
+let* fix1 = \ ~ ~ f -> let* s = \ s_0 x -> f (s_0 s_0) x in s s
+     error = \ ~ thunk -> ERROR
+     Unit = \ ~ case_Unit -> case_Unit
+     Tuple2 = \ ~ ~ arg_0 arg_1 ~ case_Tuple2 -> case_Tuple2 arg_0 arg_1
+     Tuple2_match = \ ~ ~ x_0 -> x_0
+     fUnsafeFromDataTuple2_cunsafeFromBuiltinData =
+       \ ~ ~ dUnsafeFromData dUnsafeFromData_0 d ->
+         let* tup = \ ~ -> unConstrData# d
+              t = \ ~ -> sndPair# ! ! (tup !)
+         in ifThenElse# !
+              (equalsInteger# (fstPair# ! ! (tup !)) 0#)
+              (\ ds -> Tuple2 ! ! (dUnsafeFromData (headList# ! (t !))) (dUnsafeFromData_0 (headList# ! (tailList# ! (t !)))))
+              (\ ds_0 -> error ! ((\ x_1 -> x_1) (trace# ! "PT1"#t Unit) ! ()#))
+              ()#
+     PubKeyCredential = \ arg_0_0 ~ case_PubKeyCredential case_ScriptCredential -> case_PubKeyCredential arg_0_0
+     ScriptCredential = \ arg_0_1 ~ case_PubKeyCredential_0 case_ScriptCredential_0 -> case_ScriptCredential_0 arg_0_1
+     fUnsafeFromDataCredential_cunsafeFromBuiltinData =
+       \ d_0 ->
+         let* tup_0 = \ ~ -> unConstrData# d_0
+              index = \ ~ -> fstPair# ! ! (tup_0 !)
+         in ifThenElse# !
+              (equalsInteger# (index !) 1#)
+              (\ ds_1 -> ScriptCredential (unBData# (headList# ! (sndPair# ! ! (tup_0 !)))))
+              (\ ds_2 -> ifThenElse# ! (equalsInteger# (index !) 0#) (\ ds_3 -> PubKeyCredential (unBData# (headList# ! (sndPair# ! ! (tup_0 !))))) (\ ds_4 -> error ! ((\ x_2 -> x_2) (trace# ! "PT1"#t Unit) ! ()#)) ()#)
+              ()#
+     StakingHash = \ arg_0_2 ~ case_StakingHash case_StakingPtr -> case_StakingHash arg_0_2
+     StakingPtr = \ arg_0_3 arg_1_0 arg_2 ~ case_StakingHash_0 case_StakingPtr_0 -> case_StakingPtr_0 arg_0_3 arg_1_0 arg_2
+     fUnsafeFromDataStakingCredential_cunsafeFromBuiltinData =
+       \ d_1 ->
+         let* tup_1 = \ ~ -> unConstrData# d_1
+              t_0 = \ ~ -> sndPair# ! ! (tup_1 !)
+              t_1 = \ ~ -> tailList# ! (t_0 !)
+              index_0 = \ ~ -> fstPair# ! ! (tup_1 !)
+         in ifThenElse# !
+              (equalsInteger# (index_0 !) 1#)
+              (\ ds_5 -> StakingPtr (unIData# (headList# ! (t_0 !))) (unIData# (headList# ! (t_1 !))) (unIData# (headList# ! (tailList# ! (t_1 !)))))
+              (\ ds_6 ->
+                 ifThenElse# ! (equalsInteger# (index_0 !) 0#) (\ ds_7 -> StakingHash (fUnsafeFromDataCredential_cunsafeFromBuiltinData (headList# ! (sndPair# ! ! (tup_1 !))))) (\ ds_8 -> error ! ((\ x_3 -> x_3) (trace# ! "PT1"#t Unit) ! ()#)) ()#)
+              ()#
+     DCertDelegDeRegKey = \ arg_0_4 ~ case_DCertDelegDeRegKey case_DCertDelegDelegate case_DCertDelegRegKey case_DCertGenesis case_DCertMir case_DCertPoolRegister case_DCertPoolRetire -> case_DCertDelegDeRegKey arg_0_4
+     DCertDelegDelegate = \ arg_0_5 arg_1_1 ~ case_DCertDelegDeRegKey_0 case_DCertDelegDelegate_0 case_DCertDelegRegKey_0 case_DCertGenesis_0 case_DCertMir_0 case_DCertPoolRegister_0 case_DCertPoolRetire_0 -> case_DCertDelegDelegate_0 arg_0_5 arg_1_1
+     DCertDelegRegKey = \ arg_0_6 ~ case_DCertDelegDeRegKey_1 case_DCertDelegDelegate_1 case_DCertDelegRegKey_1 case_DCertGenesis_1 case_DCertMir_1 case_DCertPoolRegister_1 case_DCertPoolRetire_1 -> case_DCertDelegRegKey_1 arg_0_6
+     DCertGenesis = \ ~ case_DCertDelegDeRegKey_2 case_DCertDelegDelegate_2 case_DCertDelegRegKey_2 case_DCertGenesis_2 case_DCertMir_2 case_DCertPoolRegister_2 case_DCertPoolRetire_2 -> case_DCertGenesis_2
+     DCertMir = \ ~ case_DCertDelegDeRegKey_3 case_DCertDelegDelegate_3 case_DCertDelegRegKey_3 case_DCertGenesis_3 case_DCertMir_3 case_DCertPoolRegister_3 case_DCertPoolRetire_3 -> case_DCertMir_3
+     DCertPoolRegister = \ arg_0_7 arg_1_2 ~ case_DCertDelegDeRegKey_4 case_DCertDelegDelegate_4 case_DCertDelegRegKey_4 case_DCertGenesis_4 case_DCertMir_4 case_DCertPoolRegister_4 case_DCertPoolRetire_4 -> case_DCertPoolRegister_4 arg_0_7 arg_1_2
+     DCertPoolRetire = \ arg_0_8 arg_1_3 ~ case_DCertDelegDeRegKey_5 case_DCertDelegDelegate_5 case_DCertDelegRegKey_5 case_DCertGenesis_5 case_DCertMir_5 case_DCertPoolRegister_5 case_DCertPoolRetire_5 -> case_DCertPoolRetire_5 arg_0_8 arg_1_3
+     fUnsafeFromDataDCert_cunsafeFromBuiltinData =
+       \ d_2 ->
+         let* tup_2 = \ ~ -> unConstrData# d_2
+              t_2 = \ ~ -> sndPair# ! ! (tup_2 !)
+              t_3 = \ ~ -> sndPair# ! ! (tup_2 !)
+              t_4 = \ ~ -> sndPair# ! ! (tup_2 !)
+              index_1 = \ ~ -> fstPair# ! ! (tup_2 !)
+         in ifThenElse# !
+              (equalsInteger# (index_1 !) 6#)
+              (\ ds_9 -> DCertMir)
+              (\ ds_a ->
+                 ifThenElse# !
+                   (equalsInteger# (index_1 !) 5#)
+                   (\ ds_b -> DCertGenesis)
+                   (\ ds_c ->
+                      ifThenElse# !
+                        (equalsInteger# (index_1 !) 4#)
+                        (\ ds_d -> DCertPoolRetire (unBData# (headList# ! (t_4 !))) (unIData# (headList# ! (tailList# ! (t_4 !)))))
+                        (\ ds_e ->
+                           ifThenElse# !
+                             (equalsInteger# (index_1 !) 3#)
+                             (\ ds_f -> DCertPoolRegister (unBData# (headList# ! (t_3 !))) (unBData# (headList# ! (tailList# ! (t_3 !)))))
+                             (\ ds_g ->
+                                ifThenElse# !
+                                  (equalsInteger# (index_1 !) 2#)
+                                  (\ ds_h -> DCertDelegDelegate (fUnsafeFromDataStakingCredential_cunsafeFromBuiltinData (headList# ! (t_2 !))) (unBData# (headList# ! (tailList# ! (t_2 !)))))
+                                  (\ ds_i ->
+                                     ifThenElse# !
+                                       (equalsInteger# (index_1 !) 1#)
+                                       (\ ds_j -> DCertDelegDeRegKey (fUnsafeFromDataStakingCredential_cunsafeFromBuiltinData (headList# ! (sndPair# ! ! (tup_2 !)))))
+                                       (\ ds_k ->
+                                          ifThenElse# !
+                                            (equalsInteger# (index_1 !) 0#)
+                                            (\ ds_m -> DCertDelegRegKey (fUnsafeFromDataStakingCredential_cunsafeFromBuiltinData (headList# ! (sndPair# ! ! (tup_2 !)))))
+                                            (\ ds_n -> error ! ((\ x_4 -> x_4) (trace# ! "PT1"#t Unit) ! ()#))
+                                            ()#)
+                                       ()#)
+                                  ()#)
+                             ()#)
+                        ()#)
+                   ()#)
+              ()#
+     True = \ ~ case_True case_False -> case_True
+     False = \ ~ case_True_0 case_False_0 -> case_False_0
+     fUnsafeFromDataBool_cunsafeFromBuiltinData =
+       \ d_3 ->
+         let* index_2 = \ ~ -> fstPair# ! ! (unConstrData# d_3)
+         in ifThenElse# ! (equalsInteger# (index_2 !) 1#) (\ ds_p -> True) (\ ds_r -> ifThenElse# ! (equalsInteger# (index_2 !) 0#) (\ ds_s -> False) (\ ds_t -> error ! ((\ x_5 -> x_5) (trace# ! "PT1"#t Unit) ! ()#)) ()#) ()#
+     Finite = \ ~ arg_0_9 ~ case_Finite case_NegInf case_PosInf -> case_Finite arg_0_9
+     NegInf = \ ~ ~ case_Finite_0 case_NegInf_0 case_PosInf_0 -> case_NegInf_0
+     PosInf = \ ~ ~ case_Finite_1 case_NegInf_1 case_PosInf_1 -> case_PosInf_1
+     Extended_match = \ ~ x_6 -> x_6
+     fUnsafeFromDataExtended_cunsafeFromBuiltinData =
+       \ ~ dUnsafeFromData_1 d_4 ->
+         let* tup_3 = \ ~ -> unConstrData# d_4
+              index_3 = \ ~ -> fstPair# ! ! (tup_3 !)
+         in ifThenElse# !
+              (equalsInteger# (index_3 !) 2#)
+              (\ ds_u -> PosInf !)
+              (\ ds_v ->
+                 ifThenElse# !
+                   (equalsInteger# (index_3 !) 1#)
+                   (\ ds_w -> Finite ! (dUnsafeFromData_1 (headList# ! (sndPair# ! ! (tup_3 !)))))
+                   (\ ds_x -> ifThenElse# ! (equalsInteger# (index_3 !) 0#) (\ ds_y -> NegInf !) (\ ds_z -> error ! ((\ x_7 -> x_7) (trace# ! "PT1"#t Unit) ! ()#)) ()#)
+                   ()#)
+              ()#
+     fUnsafeFromDataTxId_cunsafeFromBuiltinData =
+       \ d_5 -> let* tup_4 = \ ~ -> unConstrData# d_5 in ifThenElse# ! (equalsInteger# (fstPair# ! ! (tup_4 !)) 0#) (\ ds_10 -> unBData# (headList# ! (sndPair# ! ! (tup_4 !)))) (\ ds_11 -> error ! ((\ x_8 -> x_8) (trace# ! "PT1"#t Unit) ! ()#)) ()#
+     TxOutRef = \ arg_0_a arg_1_4 ~ case_TxOutRef -> case_TxOutRef arg_0_a arg_1_4
+     fUnsafeFromDataTxOutRef_cunsafeFromBuiltinData =
+       \ d_6 ->
+         let* tup_5 = \ ~ -> unConstrData# d_6
+              t_5 = \ ~ -> sndPair# ! ! (tup_5 !)
+         in ifThenElse# !
+              (equalsInteger# (fstPair# ! ! (tup_5 !)) 0#)
+              (\ ds_12 -> TxOutRef (fUnsafeFromDataTxId_cunsafeFromBuiltinData (headList# ! (t_5 !))) (unIData# (headList# ! (tailList# ! (t_5 !)))))
+              (\ ds_13 -> error ! ((\ x_9 -> x_9) (trace# ! "PT1"#t Unit) ! ()#))
+              ()#
+     Just = \ ~ arg_0_b ~ case_Just case_Nothing -> case_Just arg_0_b
+     Nothing = \ ~ ~ case_Just_0 case_Nothing_0 -> case_Nothing_0
+     Maybe_match = \ ~ x_a -> x_a
+     fUnsafeFromDataMaybe_cunsafeFromBuiltinData =
+       \ ~ dUnsafeFromData_2 d_7 ->
+         let* tup_6 = \ ~ -> unConstrData# d_7
+              index_4 = \ ~ -> fstPair# ! ! (tup_6 !)
+         in ifThenElse# !
+              (equalsInteger# (index_4 !) 0#)
+              (\ ds_14 -> Just ! (dUnsafeFromData_2 (headList# ! (sndPair# ! ! (tup_6 !)))))
+              (\ ds_15 -> ifThenElse# ! (equalsInteger# (index_4 !) 1#) (\ ds_16 -> Nothing !) (\ ds_17 -> error ! ((\ x_b -> x_b) (trace# ! "PT1"#t Unit) ! ()#)) ()#)
+              ()#
+     Nil = \ ~ ~ case_Nil case_Cons -> case_Nil
+     Cons = \ ~ arg_0_c arg_1_5 ~ case_Nil_0 case_Cons_0 -> case_Cons_0 arg_0_c arg_1_5
+     Nil_match = \ ~ x_c -> x_c
+     fUnsafeFromDataMap_cunsafeFromBuiltinData =
+       \ ~ ~ dUnsafeFromData_3 dUnsafeFromData_4 ->
+         let* go =
+                fix1
+                  !
+                  !
+                  (\ go_0 l ->
+                     let* tup_7 = \ ~ -> headList# ! l
+                     in chooseList# ! ! l (\ ds_18 -> Nil !) (\ ds_19 -> Cons ! (Tuple2 ! ! (dUnsafeFromData_3 (fstPair# ! ! (tup_7 !))) (dUnsafeFromData_4 (sndPair# ! ! (tup_7 !)))) (go_0 (tailList# ! l))) Unit)
+         in \ d_8 -> go (unMapData# d_8)
+     fUnsafeFromDataValue = \ ~ -> fUnsafeFromDataMap_cunsafeFromBuiltinData ! ! unBData# unIData#
+     Address = \ arg_0_d arg_1_6 ~ case_Address -> case_Address arg_0_d arg_1_6
+     TxOut = \ arg_0_e arg_1_7 arg_2_0 ~ case_TxOut -> case_TxOut arg_0_e arg_1_7 arg_2_0
+     fUnsafeFromDataTxOut_cunsafeFromBuiltinData =
+       \ d_9 ->
+         let* tup_8 = \ ~ -> unConstrData# d_9
+              t_6 = \ ~ -> sndPair# ! ! (tup_8 !)
+              t_7 = \ ~ -> tailList# ! (t_6 !)
+         in ifThenElse# !
+              (equalsInteger# (fstPair# ! ! (tup_8 !)) 0#)
+              (\ ds_1a ->
+                 TxOut
+                   (let* d_a = headList# ! (t_6 !)
+                         tup_9 = \ ~ -> unConstrData# d_a
+                         t_8 = \ ~ -> sndPair# ! ! (tup_9 !)
+                    in ifThenElse# !
+                         (equalsInteger# (fstPair# ! ! (tup_9 !)) 0#)
+                         (\ ds_1b ->
+                            Address (fUnsafeFromDataCredential_cunsafeFromBuiltinData (headList# ! (t_8 !))) (fUnsafeFromDataMaybe_cunsafeFromBuiltinData ! fUnsafeFromDataStakingCredential_cunsafeFromBuiltinData (headList# ! (tailList# ! (t_8 !)))))
+                         (\ ds_1c -> error ! ((\ x_d -> x_d) (trace# ! "PT1"#t Unit) ! ()#))
+                         ()#)
+                   (fUnsafeFromDataMap_cunsafeFromBuiltinData ! ! unBData# (fUnsafeFromDataValue !) (headList# ! (t_7 !)))
+                   (fUnsafeFromDataMaybe_cunsafeFromBuiltinData ! unBData# (headList# ! (tailList# ! (t_7 !)))))
+              (\ ds_1d -> error ! ((\ x_e -> x_e) (trace# ! "PT1"#t Unit) ! ()#))
+              ()#
+     fUnsafeFromDataNil_cunsafeFromBuiltinData =
+       \ ~ dUnsafeFromData_5 -> let* go_1 = fix1 ! ! (\ go_2 l_0 -> chooseList# ! ! l_0 (\ ds_1e -> Nil !) (\ ds_1f -> Cons ! (dUnsafeFromData_5 (headList# ! l_0)) (go_2 (tailList# ! l_0))) Unit) in \ d_b -> go_1 (unListData# d_b)
+     MultiSig = \ arg_0_f arg_1_8 ~ case_MultiSig -> case_MultiSig arg_0_f arg_1_8
+     foldr = fix1 ! ! (\ foldr_0 arg ~ ~ f_0 acc l_1 -> Nil_match ! l_1 ! (\ ~ -> acc) (\ x_f xs ~ -> f_0 x_f (foldr_0 (\ ~ x_g -> x_g) ! ! f_0 acc xs)) !)
+     Certifying = \ arg_0_g ~ case_Certifying case_Minting case_Rewarding case_Spending -> case_Certifying arg_0_g
+     Minting = \ arg_0_h ~ case_Certifying_0 case_Minting_0 case_Rewarding_0 case_Spending_0 -> case_Minting_0 arg_0_h
+     Rewarding = \ arg_0_i ~ case_Certifying_1 case_Minting_1 case_Rewarding_1 case_Spending_1 -> case_Rewarding_1 arg_0_i
+     Spending = \ arg_0_j ~ case_Certifying_2 case_Minting_2 case_Rewarding_2 case_Spending_2 -> case_Spending_2 arg_0_j
+     LowerBound = \ ~ arg_0_k arg_1_9 ~ case_LowerBound -> case_LowerBound arg_0_k arg_1_9
+     LowerBound_match = \ ~ x_h -> x_h
+     UpperBound = \ ~ arg_0_m arg_1_a ~ case_UpperBound -> case_UpperBound arg_0_m arg_1_a
+     UpperBound_match = \ ~ x_i -> x_i
+     Interval = \ ~ arg_0_n arg_1_b ~ case_Interval -> case_Interval arg_0_n arg_1_b
+     Interval_match = \ ~ x_j -> x_j
+     TxInInfo = \ arg_0_p arg_1_c ~ case_TxInInfo -> case_TxInInfo arg_0_p arg_1_c
+     TxInfo = \ arg_0_r arg_1_d arg_2_1 arg_3 arg_4 arg_5 arg_6 arg_7 arg_8 arg_9 ~ case_TxInfo -> case_TxInfo arg_0_r arg_1_d arg_2_1 arg_3 arg_4 arg_5 arg_6 arg_7 arg_8 arg_9
+     ScriptContext = \ arg_0_s arg_1_e ~ case_ScriptContext -> case_ScriptContext arg_0_s arg_1_e
+     CConsMonoid = \ ~ arg_0_t arg_1_f ~ case_CConsMonoid -> case_CConsMonoid arg_0_t arg_1_f
+     Monoid_match = \ ~ x_k -> x_k
+     p1Monoid = \ ~ v -> Monoid_match ! v ! (\ v_0 v_1 -> v_0)
+     mempty = \ ~ v_2 -> Monoid_match ! v_2 ! (\ v_3 v_4 -> v_4)
+     fFoldableNil_cfoldMap =
+       fix1 ! ! (\ fFoldableNil_cfoldMap_0 arg_0 ~ ~ dMonoid ds_1g ds_1h -> Nil_match ! ds_1h ! (\ ~ -> mempty ! dMonoid) (\ x_m xs_0 ~ -> p1Monoid ! dMonoid (ds_1g x_m) (fFoldableNil_cfoldMap_0 (\ ~ x_n -> x_n) ! ! dMonoid ds_1g xs_0)) !)
+     GHC_Types_Nil = \ ~ ~ case_GHC_Types_Nil case_GHC_Types_Cons -> case_GHC_Types_Nil
+     GHC_Types_Cons = \ ~ arg_0_u arg_1_g ~ case_GHC_Types_Nil_0 case_GHC_Types_Cons_0 -> case_GHC_Types_Cons_0 arg_0_u arg_1_g
+     match_GHC_Types_Nil = \ ~ x_p -> x_p
+     MultiSig_MultiSig = \ arg_0_v arg_1_h ~ case_MultiSig_MultiSig -> case_MultiSig_MultiSig arg_0_v arg_1_h
+     ms = MultiSig_MultiSig (GHC_Types_Cons ! "some-string-which-is-28-long"#b (GHC_Types_Cons ! "s0me-string-which-is-28-long"#b (GHC_Types_Cons ! "some-string-which-is-28-l0ng"#b (GHC_Types_Nil !)))) 2#
+in \ datum redeemer ctx ->
+     let* tup_a = \ ~ -> unConstrData# ctx
+          t_9 = \ ~ -> sndPair# ! ! (tup_a !)
+     in (\ x_r -> x_r)
+          (let* p =
+                  ifThenElse# !
+                    (equalsInteger# (fstPair# ! ! (tup_a !)) 0#)
+                    (\ ds_1i ->
+                       ScriptContext
+                         (let* d_c = headList# ! (t_9 !)
+                               tup_b = \ ~ -> unConstrData# d_c
+                               t_a = \ ~ -> sndPair# ! ! (tup_b !)
+                               t_b = \ ~ -> tailList# ! (t_a !)
+                               t_c = \ ~ -> tailList# ! (t_b !)
+                               t_d = \ ~ -> tailList# ! (t_c !)
+                               t_e = \ ~ -> tailList# ! (t_d !)
+                               t_f = \ ~ -> tailList# ! (t_e !)
+                               t_g = \ ~ -> tailList# ! (t_f !)
+                               t_h = \ ~ -> tailList# ! (t_g !)
+                               t_i = \ ~ -> tailList# ! (t_h !)
+                          in ifThenElse# !
+                               (equalsInteger# (fstPair# ! ! (tup_b !)) 0#)
+                               (\ ds_1j ->
+                                  TxInfo
+                                    (fUnsafeFromDataNil_cunsafeFromBuiltinData
+                                       !
+                                       (\ d_d ->
+                                          let* tup_c = \ ~ -> unConstrData# d_d
+                                               t_j = \ ~ -> sndPair# ! ! (tup_c !)
+                                          in ifThenElse# !
+                                               (equalsInteger# (fstPair# ! ! (tup_c !)) 0#)
+                                               (\ ds_1k -> TxInInfo (fUnsafeFromDataTxOutRef_cunsafeFromBuiltinData (headList# ! (t_j !))) (fUnsafeFromDataTxOut_cunsafeFromBuiltinData (headList# ! (tailList# ! (t_j !)))))
+                                               (\ ds_1m -> error ! ((\ x_s -> x_s) (trace# ! "PT1"#t Unit) ! ()#))
+                                               ()#)
+                                       (headList# ! (t_a !)))
+                                    (fUnsafeFromDataNil_cunsafeFromBuiltinData ! fUnsafeFromDataTxOut_cunsafeFromBuiltinData (headList# ! (t_b !)))
+                                    (fUnsafeFromDataMap_cunsafeFromBuiltinData ! ! unBData# (fUnsafeFromDataValue !) (headList# ! (t_c !)))
+                                    (fUnsafeFromDataMap_cunsafeFromBuiltinData ! ! unBData# (fUnsafeFromDataValue !) (headList# ! (t_d !)))
+                                    (fUnsafeFromDataNil_cunsafeFromBuiltinData ! fUnsafeFromDataDCert_cunsafeFromBuiltinData (headList# ! (t_e !)))
+                                    (fUnsafeFromDataNil_cunsafeFromBuiltinData ! (fUnsafeFromDataTuple2_cunsafeFromBuiltinData ! ! fUnsafeFromDataStakingCredential_cunsafeFromBuiltinData unIData#) (headList# ! (t_f !)))
+                                    (let* d_e = headList# ! (t_g !)
+                                          tup_d = \ ~ -> unConstrData# d_e
+                                          t_k = \ ~ -> sndPair# ! ! (tup_d !)
+                                     in ifThenElse# !
+                                          (equalsInteger# (fstPair# ! ! (tup_d !)) 0#)
+                                          (\ ds_1n ->
+                                             Interval
+                                               !
+                                               (let* d_f = headList# ! (t_k !)
+                                                     tup_e = \ ~ -> unConstrData# d_f
+                                                     t_m = \ ~ -> sndPair# ! ! (tup_e !)
+                                                in ifThenElse# !
+                                                     (equalsInteger# (fstPair# ! ! (tup_e !)) 0#)
+                                                     (\ ds_1p -> LowerBound ! (fUnsafeFromDataExtended_cunsafeFromBuiltinData ! unIData# (headList# ! (t_m !))) (fUnsafeFromDataBool_cunsafeFromBuiltinData (headList# ! (tailList# ! (t_m !)))))
+                                                     (\ ds_1r -> error ! ((\ x_t -> x_t) (trace# ! "PT1"#t Unit) ! ()#))
+                                                     ()#)
+                                               (let* d_g = headList# ! (tailList# ! (t_k !))
+                                                     tup_f = \ ~ -> unConstrData# d_g
+                                                     t_n = \ ~ -> sndPair# ! ! (tup_f !)
+                                                in ifThenElse# !
+                                                     (equalsInteger# (fstPair# ! ! (tup_f !)) 0#)
+                                                     (\ ds_1s -> UpperBound ! (fUnsafeFromDataExtended_cunsafeFromBuiltinData ! unIData# (headList# ! (t_n !))) (fUnsafeFromDataBool_cunsafeFromBuiltinData (headList# ! (tailList# ! (t_n !)))))
+                                                     (\ ds_1t -> error ! ((\ x_u -> x_u) (trace# ! "PT1"#t Unit) ! ()#))
+                                                     ()#))
+                                          (\ ds_1u -> error ! ((\ x_v -> x_v) (trace# ! "PT1"#t Unit) ! ()#))
+                                          ()#)
+                                    (fUnsafeFromDataNil_cunsafeFromBuiltinData ! unBData# (headList# ! (t_h !)))
+                                    (fUnsafeFromDataNil_cunsafeFromBuiltinData ! (fUnsafeFromDataTuple2_cunsafeFromBuiltinData ! ! unBData# (\ d_h -> d_h)) (headList# ! (t_i !)))
+                                    (fUnsafeFromDataTxId_cunsafeFromBuiltinData (headList# ! (tailList# ! (t_i !)))))
+                               (\ ds_1v -> error ! ((\ x_w -> x_w) (trace# ! "PT1"#t Unit) ! ()#))
+                               ()#)
+                         (let* d_i = headList# ! (tailList# ! (t_9 !))
+                               tup_g = \ ~ -> unConstrData# d_i
+                               index_5 = \ ~ -> fstPair# ! ! (tup_g !)
+                          in ifThenElse# !
+                               (equalsInteger# (index_5 !) 3#)
+                               (\ ds_1w -> Certifying (fUnsafeFromDataDCert_cunsafeFromBuiltinData (headList# ! (sndPair# ! ! (tup_g !)))))
+                               (\ ds_1x ->
+                                  ifThenElse# !
+                                    (equalsInteger# (index_5 !) 2#)
+                                    (\ ds_1y -> Rewarding (fUnsafeFromDataStakingCredential_cunsafeFromBuiltinData (headList# ! (sndPair# ! ! (tup_g !)))))
+                                    (\ ds_1z ->
+                                       ifThenElse# !
+                                         (equalsInteger# (index_5 !) 1#)
+                                         (\ ds_20 -> Spending (fUnsafeFromDataTxOutRef_cunsafeFromBuiltinData (headList# ! (sndPair# ! ! (tup_g !)))))
+                                         (\ ds_21 -> ifThenElse# ! (equalsInteger# (index_5 !) 0#) (\ ds_22 -> Minting (unBData# (headList# ! (sndPair# ! ! (tup_g !))))) (\ ds_23 -> error ! ((\ x_x -> x_x) (trace# ! "PT1"#t Unit) ! ()#)) ()#)
+                                         ()#)
+                                    ()#)
+                               ()#))
+                    (\ ds_24 -> error ! ((\ x_y -> x_y) (trace# ! "PT1"#t Unit) ! ()#))
+                    ()#
+           in (\ x_z -> x_z)
+                ms
+                !
+                (\ ds_25 ds_26 ->
+                   let* w = (\ x_10 -> x_10) p ! (\ ds_27 ds_28 -> ds_27)
+                        p_0 =
+                          \ w_0 ->
+                            (\ x_11 -> x_11)
+                              w
+                              !
+                              (\ ww ww_0 ww_1 ww_2 ww_3 ww_4 ww_5 ww_6 ww_7 ww_8 ->
+                                 Maybe_match
+                                   !
+                                   (fFoldableNil_cfoldMap
+                                      (\ ~ x_12 -> x_12)
+                                      !
+                                      !
+                                      (CConsMonoid ! (\ ds_29 b -> Maybe_match ! ds_29 ! (\ ipv ~ -> ds_29) (\ ~ -> b) !) (Nothing !))
+                                      (\ x_13 -> (\ x_14 -> x_14) (ifThenElse# ! (equalsByteString# w_0 x_13) True False) ! (\ ~ -> Just ! x_13) (\ ~ -> Nothing !) !)
+                                      ww_6)
+                                   !
+                                   (\ ds_2a ~ -> True)
+                                   (\ ~ -> False)
+                                   !)
+                        t_p = foldr (\ ~ x_15 -> x_15) ! ! (\ e xs_1 -> (\ x_16 -> x_16) (p_0 e) ! (\ ~ -> Cons ! e xs_1) (\ ~ -> xs_1) !) (Nil !) ds_25
+                        x_17 =
+                          fFoldableNil_cfoldMap
+                            (\ ~ x_18 -> x_18)
+                            !
+                            !
+                            (let* v_5 = CConsMonoid ! (\ ds_2b ds_2c x_19 -> ds_2b (ds_2c x_19)) (\ x_1a -> x_1a)
+                             in CConsMonoid ! (\ eta eta_0 -> p1Monoid ! v_5 eta_0 eta) (mempty ! v_5))
+                            (\ x_1b y -> addInteger# y 1#)
+                            t_p
+                            0#
+                        a = ifThenElse# ! (lessThanInteger# x_17 ds_26) False True
+                   in (\ x_1c -> x_1c) a ! (\ ~ -> True) (\ ~ -> trace# ! "E1"#t False) !))
+          !
+          (\ ~ -> Unit)
+          (\ ~ -> error ! ((\ x_1d -> x_1d) Unit ! ()#))
+          !
