@@ -1,0 +1,51 @@
+packages: .
+
+write-ghc-environment-files: never
+
+-- Always build tests, but don't build benchmarks.
+tests: true
+benchmarks: false
+
+-- plutus packages don't have version bounds
+constraints: flat >=0.4.5
+
+----------------------------------------------------------------------------
+-- Plutus dependencies
+----------------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+-- 2021-09-28:
+----------------------------------------------------------------------------
+
+flags: +plutus-1efbb276e
+
+optional-packages: vendor/plutus/1efbb276e/*.tar.gz
+
+allow-newer:
+           -- Pins to an old version of Template Haskell, unclear if/when it will be updated
+           size-based:template-haskell
+           , ouroboros-consensus-byron:formatting
+           , beam-core:aeson
+           , beam-sqlite:aeson
+           , beam-sqlite:dlist
+           , beam-migrate:aeson
+
+package eventful-sql-common
+  ghc-options: -XDerivingStrategies -XStandaloneDeriving -XUndecidableInstances -XDataKinds -XFlexibleInstances -XMultiParamTypeClasses
+
+----------------------------------------------------------------------------
+-- 2022-01-08:
+----------------------------------------------------------------------------
+
+-- flags: +plutus-4710dff2e
+--
+-- optional-packages: vendor/plutus/4710dff2e-c330fc60d/*.tar.gz
+--
+-- allow-newer:
+--            -- Copied from plutus-core
+--            size-based:template-haskell
+--            , ouroboros-consensus-byron:formatting
+--            , beam-core:aeson
+--            , beam-sqlite:aeson
+--            , beam-sqlite:dlist
+--            , beam-migrate:aeson

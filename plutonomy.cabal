@@ -1,0 +1,139 @@
+cabal-version:      2.4
+name:               plutonomy
+version:            0.20220117
+license-file:       LICENSE
+author:             Oleg Grenrus <oleg@well-typed.com>
+maintainer:         Oleg Grenrus <oleg@well-typed.com>
+build-type:         Simple
+extra-source-files: README.md
+
+common comm
+  default-language:   Haskell2010
+  ghc-options:
+    -Wall -Wno-unticked-promoted-constructors
+    -fwarn-incomplete-uni-patterns -Wunused-packages
+
+  default-extensions:
+    BangPatterns
+    DataKinds
+    EmptyCase
+    FlexibleContexts
+    FlexibleInstances
+    FunctionalDependencies
+    GADTs
+    KindSignatures
+    PatternSynonyms
+    QuantifiedConstraints
+    RankNTypes
+    RoleAnnotations
+    ScopedTypeVariables
+    StandaloneDeriving
+    StandaloneKindSignatures
+    TypeApplications
+    TypeFamilies
+    TypeOperators
+    ViewPatterns
+
+flag plutus-1efbb276e
+  description:
+    Assume plutus version 1efbb276ef1a10ca6961d0fd32e6141e9798bd11
+
+  manual:      True
+  default:     False
+
+flag plutus-4710dff2e
+  description:
+    Assume plutus version 4710dff2e30ce131191a6a1ccbe43595b2e3af24
+
+  manual:      True
+  default:     False
+
+flag plutus-ledger
+  description:
+    Provide @Plutonomy.TypedScripts@ & @plutus-ledger@ functionality.
+
+  manual: True
+  default: False
+
+library
+  import:            comm
+  hs-source-dirs:    src src-subst
+  exposed-modules:
+    Plutonomy
+    Plutonomy.Builtins
+    Plutonomy.Conversion
+    Plutonomy.Hereditary
+    Plutonomy.Hereditary.Rewrite
+    Plutonomy.Hereditary.Transform
+    Plutonomy.Known
+    Plutonomy.Lift
+    Plutonomy.Linear
+    Plutonomy.MissingH
+    Plutonomy.Name
+    Plutonomy.Optimize
+    Plutonomy.Pretty
+    Plutonomy.Raw
+    Plutonomy.Raw.Rewrite
+    Plutonomy.Raw.Transform
+    Plutonomy.Scripts
+    Plutonomy.Test
+    Plutonomy.UPLC
+
+  exposed-modules:
+    Subst
+    Subst.Var
+
+  other-modules:
+    Plutonomy.Orphans
+    Plutonomy.PlutusExtras
+
+  -- GHC-boot libraries
+  build-depends:
+    , base          ^>=4.14
+    , bytestring    ^>=0.10.12.0
+    , containers    ^>=0.6.2.1
+    , filepath      ^>=1.4.2.1
+    , text          ^>=1.2.3.0
+    , transformers  ^>=0.5.6.2
+
+  build-depends:
+    , fin            ^>=0.1.1
+    , lens           ^>=4.19.2
+    , prettyprinter  ^>=1.7.0
+    , some           ^>=1.0.2
+    , strict         ^>=0.4.0.1
+    , tasty          ^>=1.4.1
+    , tasty-golden   ^>=2.3.4
+    , tasty-hunit    ^>=0.10.0.3
+
+  -- plutus dependencies: no version bounds
+  build-depends:
+    , plutus-core
+    , plutus-ledger-api
+    , plutus-tx
+
+  if flag(plutus-ledger)
+    build-depends:
+      , plutus-ledger
+
+    exposed-modules:
+      Plutonomy.TypedScripts
+
+  if flag(plutus-1efbb276e)
+    build-depends: dependent-sum-template
+
+  x-docspec-options: -XOverloadedStrings -XDataKinds -XTypeApplications
+
+  if True
+    if (flag(plutus-1efbb276e) && flag(plutus-4710dff2e))
+      build-depends: unbuildable-multiple-plutus-version-flags-on
+
+    if (!flag(plutus-1efbb276e) && !flag(plutus-4710dff2e))
+      build-depends: unbuildable-no-plutus-version-flag
+
+  if True
+    if flag(plutus-1efbb276e)
+      cpp-options: -DPLUTUS_VER=1
+
+    if flag(plutus-4710dff2e)
+      cpp-options: -DPLUTUS_VER=2
