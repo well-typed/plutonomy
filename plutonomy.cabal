@@ -1,6 +1,7 @@
 cabal-version:      2.4
 name:               plutonomy
 version:            0.20220117
+license:            BSD3
 license-file:       LICENSE
 author:             Oleg Grenrus <oleg@well-typed.com>
 maintainer:         Oleg Grenrus <oleg@well-typed.com>
