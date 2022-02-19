@@ -1,0 +1,27 @@
+packages: .
+
+write-ghc-environment-files: never
+
+-- Always build tests, but don't build benchmarks.
+tests: true
+benchmarks: false
+
+-- plutus packages don't have version bounds
+constraints: flat >=0.4.5
+constraints: aeson <1.6
+constraints: hedgehog <1.1
+
+----------------------------------------------------------------------------
+-- Plutus dependencies: 2022-01-08
+----------------------------------------------------------------------------
+
+flags: +plutus-4710dff2e
+
+packages: vendor/plutus/4710dff2e-c330fc60d/*.tar.gz
+
+allow-newer:
+  -- Pins to an old version of Template Haskell, unclear if/when it will be updated
+  size-based:template-haskell
+
+package eventful-sql-common
+  ghc-options: -XDerivingStrategies -XStandaloneDeriving -XUndecidableInstances -XDataKinds -XFlexibleInstances -XMultiParamTypeClasses

@@ -1,3 +1,5 @@
+github-action-name: Haskell-CI 1efbb276e
+
 branches: master
 apt:      libsodium-dev
 

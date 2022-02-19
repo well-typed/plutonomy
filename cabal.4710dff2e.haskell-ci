@@ -1,0 +1,7 @@
+github-action-name: Haskell-CI 4710dff2e
+
+branches: master
+apt:      libsodium-dev
+
+raw-project
+  flags: +plutus-4710dff2e
