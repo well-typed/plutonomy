@@ -11,7 +11,8 @@ maintainer:         Oleg Grenrus <oleg@well-typed.com>
 build-type:         Simple
 tested-with:        GHC ==8.10.7
 extra-source-files:
-  fixtures/*.txt
+  fixtures-1/*.txt
+  fixtures-2/*.txt
   README.md
 
 
@@ -161,3 +162,10 @@ test-suite plutonomy-tests
     , plutus-tx
     , plutus-tx-plugin
     , tasty
+
+  if True
+    if flag(plutus-1efbb276e)
+      cpp-options: -DPLUTUS_VER=1
+
+    if flag(plutus-4710dff2e)
+      cpp-options: -DPLUTUS_VER=2

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Main (main) where
 
@@ -13,11 +14,26 @@ main :: IO ()
 main = defaultMain $ testGroup "plutonomy"
     [ plutonomyTests TestOptions
         { toName        = "multisig"
+
+#if PLUTUS_VER == 1
         , toUnoptSize   = (2928,2532)
+#elif PLUTUS_VER == 2
+        , toUnoptSize   = (2923,2432)
+#else
+        , toUnoptSize   = (0,0)
+#endif
+
         , toOptSize     = (1900,1653) -- 65% of original
         , toAggSize     = (1902,1623)
+
         , toTerm        = validatorToRaw $ MultiSig.validator' multisigParams
-        , toFixturesDir = "fixtures"
+#if PLUTUS_VER == 1
+        , toFixturesDir = "fixtures-1"
+#elif PLUTUS_VER == 2
+        , toFixturesDir = "fixtures-2"
+#else
+        , toFixturesDir = error "Invalid configuration"
+#endif
         }
     ]
 
