@@ -1,0 +1,5 @@
+branches: master
+apt:      libsodium-dev
+
+raw-project
+  flags: +plutus-1efbb276e
