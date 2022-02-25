@@ -10,8 +10,8 @@ particularly aggressive optimisation level, the optimiser can
 perform certain transformations that may not preserve the
 semantics.
 
-The main optimiser entry point is `optimizeUPLC` or
-`optimizeUPLCWith` if you want to deviate from the default
+The main optimiser entry point is `Plutonomy.UPLC.optimizeUPLC` or
+`Plutonomy.UPLC.optimizeUPLCWith` if you want to deviate from the default
 configuration options.
 
 The library additionally provides its own variants of
