@@ -10,6 +10,14 @@ particularly aggressive optimisation level, the optimiser can
 perform certain transformations that may not preserve the
 semantics.
 
+Any use of the library as well as feedback is welcome, but due
+to time constraints, we cannot guarantee any level
+of unpaid support.  Please contact Well-Typed via email to
+[info@well-typed.com](mailto:info@well-typed.com) if you are
+interested in commercial support or funding development of the library.
+
+## Usage
+
 The main optimiser entry point is `Plutonomy.UPLC.optimizeUPLC` or
 `Plutonomy.UPLC.optimizeUPLCWith` if you want to deviate from the default
 configuration options.
@@ -23,12 +31,6 @@ be turned back into their Plutus counterparts via
 `Plutonomy.Scripts.mintingPolicyToPlutus`. The Plutonomy
 representation is intended for debugging / inspection
 as it uses names for binders instead of de Bruijn indices.
-
-More extensive documentation of the library is forthcoming.
-
-Any use of the library as well as feedback is welcome, but due
-to timing constraints, we cannot current guarantee any level
-of unpaid support.
 
 ## Flags
 
