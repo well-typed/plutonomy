@@ -1,6 +1,6 @@
 cabal-version:      2.4
 name:               plutonomy
-version:            0.20220117
+version:            0.20220303
 synopsis:           An optimizer for untyped plutus core
 category:           Plutus
 description:        An optimizer for untyped plutus core.
