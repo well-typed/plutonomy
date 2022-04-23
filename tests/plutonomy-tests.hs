@@ -23,8 +23,8 @@ main = defaultMain $ testGroup "plutonomy"
         , toUnoptSize   = (0,0)
 #endif
 
-        , toOptSize     = (1900,1653) -- 65% of original
-        , toAggSize     = (1902,1623)
+        , toOptSize     = (1891,1645) -- 65% of original
+        , toAggSize     = (1893,1615)
 
         , toTerm        = validatorToRaw $ MultiSig.validator' multisigParams
 #if PLUTUS_VER == 1
