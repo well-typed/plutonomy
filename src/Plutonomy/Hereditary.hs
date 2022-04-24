@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE DataKinds          #-}
 {-# LANGUAGE DeriveTraversable  #-}
 {-# LANGUAGE GADTs              #-}
@@ -18,6 +19,7 @@ import qualified Data.Sequence as Seq
 import Plutonomy.Builtins
 import Plutonomy.Name
 import Plutonomy.Raw      (Raw)
+import Plutonomy.Known    (pattern RawFix)
 import Subst
 
 import qualified Plutonomy.Raw as Raw
@@ -72,6 +74,7 @@ data Head a n
     = HeadVar (Var n)
     | HeadFree a
     | HeadBuiltin DefaultFun
+    | HeadFix
   deriving (Eq, Ord, Show)
 
 -- | Eliminators.
@@ -151,6 +154,7 @@ instance Rename (Defn a) where
 
 instance Rename (Head a) where
     r <@> HeadVar x     = HeadVar (r <@> x)
+    _ <@> HeadFix       = HeadFix
     _ <@> HeadFree x    = HeadFree x
     _ <@> HeadBuiltin b = HeadBuiltin b
 
@@ -183,6 +187,7 @@ substHead :: Sub (Term a) n m -> Head a n -> Term a m
 substHead _sub (HeadFree x)    = Free x
 substHead _sub (HeadBuiltin b) = Builtin b
 substHead  sub (HeadVar x)     = substVar sub x
+substHead _sub HeadFix         = Defn (Neutral HeadFix Seq.Empty)
 
 substElim :: Sub (Term a) n m -> Elim a n -> Elim a m
 substElim  sub (App x) = App (subst sub x)
@@ -202,6 +207,7 @@ bindHead :: Head a n -> (a -> Term b n) -> Term b n
 bindHead (HeadFree x)    k = k x
 bindHead (HeadVar x)     _ = Var x
 bindHead (HeadBuiltin b) _ = Builtin b
+bindHead HeadFix         _ = Defn (Neutral HeadFix Seq.empty)
 
 bindElim :: Elim a n -> (a -> Term b n) -> Elim b n
 bindElim (App x) k = App (bindTerm x k)
@@ -224,6 +230,7 @@ headVars :: Applicative f => (Var n -> f (Var m)) -> (a -> f b) -> Head a n -> f
 headVars _ g (HeadFree x)    = HeadFree <$> g x
 headVars _ _ (HeadBuiltin b) = pure (HeadBuiltin b)
 headVars f _ (HeadVar x)     = HeadVar <$> f x
+headVars _ _ HeadFix         = pure HeadFix
 
 elimVars :: Applicative f => (Var n -> f (Var m)) -> (a -> f b) -> Elim a n -> f (Elim b m)
 elimVars f g (App x) = App <$> vars f g x
@@ -251,17 +258,54 @@ defnVars f g (Delay t     ) = Delay <$> vars f g t
 -- >>> isValue (const 0) (const 0) (force_ trace_ :@ str_ "err" :@ tt_)
 -- False
 --
+-- >>> isValue (const 0) (const 0) $ fix_ :@ lams_ ["rec", "x"] "x"
+-- True
+--
 isValue
     :: (Var n -> Int)
     -> (a -> Int)
     -> Term a n
     -> Bool
-isValue _ _ Error {}                              = False
-isValue _ _ Let {}                                = False
-isValue _ _ (Defn (Neutral (HeadBuiltin b) args)) = builtinArity b > length args
-isValue v _ (Defn (Neutral (HeadVar x) args))     = null args || v x > length args
-isValue _ h (Defn (Neutral (HeadFree x) args))    = null args || h x > length args
-isValue _ _ Defn {}                               = True
+isValue _ _ Error {}                                  = False
+isValue _ _ Let {}                                    = False
+isValue _ _ (Defn (Neutral (HeadBuiltin b) args))     = builtinArity b > length args
+isValue v _ (Defn (Neutral (HeadVar x) args))         = null args || v x > length args
+isValue _ h (Defn (Neutral (HeadFree x) args))        = null args || h x > length args
+isValue _ _ (Defn (Neutral HeadFix Seq.Empty))        = True
+isValue _ _ (Defn (Neutral HeadFix (f Seq.:<| args))) = elimArity f - 1 > length args
+isValue _ _ (Defn Lam {})                             = True
+isValue _ _ (Defn Delay {})                           = True
+isValue _ _ (Defn Constant {})                        = True
+
+-- | Approximate arity of a term.
+--
+-- >>> termArity $ lam_ "x" "x"
+-- 1
+--
+-- >>> termArity $ lams_ ["x","y","z"] "x"
+-- 3
+--
+-- >>> termArity "free"
+-- 0
+--
+termArity :: Term a n -> Int
+termArity (Defn d) = defnArity d
+termArity _        = 0
+
+elimArity :: Elim a n -> Int
+elimArity (App t) = termArity t
+elimArity Force   = 0
+
+defnArity :: Defn a n -> Int
+defnArity = go 0 where
+    go :: Int -> Defn a n -> Int
+    go !acc (Lam _ t) = go' (acc + 1) t
+    go  acc (Delay t) = go' (acc + 1) t
+    go  acc _         = acc
+
+    go' :: Int -> Term a n -> Int
+    go' !acc (Defn t) = go acc t
+    go'  acc _        = acc
 
 -------------------------------------------------------------------------------
 -- * Error
@@ -413,6 +457,15 @@ lam_ n t = Defn (Lam (Name n) (abstract1 n t))
 lams_ :: [Text] -> Term Text n -> Term Text n
 lams_ n t = foldr lam_ t n
 
+-- | Fixed-point
+--
+-- >>> pp fix_
+-- let* fix = \ f -> let* s = \ s0 x -> f (s0 s0) x in s s
+-- in fix
+--
+fix_ :: Term a n
+fix_ = Defn (Neutral HeadFix Seq.Empty)
+
 -- | If-then-else
 ite_ :: Term a n
 ite_ = Builtin IfThenElse
@@ -435,27 +488,42 @@ tt_ = Defn (Constant (Some (ValueOf DefaultUniUnit ())))
 
 -- | Convert 'Term' to 'Raw'.
 toRaw :: Term a n -> Raw a n
-toRaw Error          = Raw.Error
-toRaw (Defn i)       = defnToRaw i
-toRaw (Let n t s)    = Raw.Let n (defnToRaw t) (toRaw s)
+toRaw t
+    | Just t'' <- bound unusedVar t' = t''
+    | otherwise                      = Raw.Let "fix" (RawFix "f" "s" "s0" "x") t'
+  where
+    t' = weaken (toRaw' t) >>== \aux -> case aux of
+        Aux a  -> Raw.Free a
+        AuxFix -> Raw.Var0
 
-elimToRaw :: Elim a n -> Raw.Arg a n
-elimToRaw (App t) = Raw.ArgTerm (toRaw t)
+toRaw' :: Term a n -> Raw (Aux a) n
+toRaw' Error          = Raw.Error
+toRaw' (Defn i)       = defnToRaw i
+toRaw' (Let n t s)    = Raw.Let n (defnToRaw t) (toRaw' s)
+
+data Aux a
+    = Aux a
+    | AuxFix
+
+elimToRaw :: Elim a n -> Raw.Arg (Aux a) n
+elimToRaw (App t) = Raw.ArgTerm (toRaw' t)
 elimToRaw Force   = Raw.ArgForce
 
-headToRaw :: Head a n -> Raw a n
+headToRaw :: Head a n -> Raw (Aux a) n
 headToRaw (HeadVar x)     = Raw.Var x
-headToRaw (HeadFree x)    = Raw.Free x
+headToRaw HeadFix         = Raw.Free AuxFix
+headToRaw (HeadFree x)    = Raw.Free (Aux x)
 headToRaw (HeadBuiltin b) = Raw.Builtin b
 
-defnToRaw :: Defn a n -> Raw a n
+defnToRaw :: Defn a n -> Raw (Aux a) n
 defnToRaw (Neutral h xs) = Raw.appArgs_ (headToRaw h) (map elimToRaw (toList xs))
 defnToRaw (Constant c)   = Raw.Constant c
-defnToRaw (Delay t)      = Raw.Delay (toRaw t)
-defnToRaw (Lam n t)      = Raw.Lam n (toRaw t)
+defnToRaw (Delay t)      = Raw.Delay (toRaw' t)
+defnToRaw (Lam n t)      = Raw.Lam n (toRaw' t)
 
 -- | Convert 'Raw' to 'Term'.
 fromRaw :: Raw a n -> Term a n
+fromRaw (RawFix _ _ _ _) = Defn (Neutral HeadFix Seq.Empty)
 fromRaw (Raw.Var x)      = Var x
 fromRaw (Raw.Free x)     = Free x
 fromRaw (Raw.Builtin b)  = Builtin b

@@ -36,7 +36,6 @@ import Plutonomy.Hereditary.Rewrite
 import Plutonomy.Name
 import Plutonomy.Raw.Transform      (AppError (..), FloatOutAppArg (..))
 
-
 -- $setup
 -- >>> import Plutonomy.MissingH
 -- >>> import Subst
@@ -393,7 +392,6 @@ inlineUsedOnce ctx (Let _n t s)
     this VZ     = Const (Sum 1)
     this (VS _) = Const (Sum 0)
 inlineUsedOnce _ _ = Nothing
-
 
 -- | 'Error' propagation.
 --

@@ -147,7 +147,7 @@ definitionsOnLet :: Name -> Defn a m -> Definitions a m -> Definitions a ('S m)
 definitionsOnLet _ t ctx =
     Definitions (Map.insert VZ (DefnWithArity a (weaken t)) ctx')
   where
-    a = arity t
+    a = defnArity t
     Definitions ctx' = weaken ctx
 
 -- | Variable definition arity is at least the returned value.
@@ -165,25 +165,6 @@ isUnsaturatedApp ctx (Defn (Neutral (HeadVar f) args))
     , length args < a
     = True
 isUnsaturatedApp _ _ = False
-
--- Arity of a definition.
---
--- >>> arity $ lam_ "x" "x"
--- 1
---
--- >>> arity "free"
--- 0
---
-arity :: Defn a n -> Int
-arity = go 0 where
-    go :: Int -> Defn a n -> Int
-    go !acc (Lam _ t) = go' (acc + 1) t
-    go  acc (Delay t) = go' (acc + 1) t
-    go  acc _         = acc
-
-    go' :: Int -> Term a n -> Int
-    go' !acc (Defn t) = go acc t
-    go'  acc _        = acc
 
 rewriteWithDefinitions
     :: Ord a
