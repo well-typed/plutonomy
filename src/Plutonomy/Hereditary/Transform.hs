@@ -150,6 +150,8 @@ isForcedInHead _ _           _  = False
 isForcedInElim :: Var n -> Elim a n -> Bool
 isForcedInElim _ Force   = False
 isForcedInElim x (App t) = isForcedIn x t
+isForcedInElim _ Fst     = False
+isForcedInElim _ Snd     = False
 
 isStrictIn :: Var n -> Term a n -> Bool
 isStrictIn x (Defn d)     = isStrictInDefn x d
@@ -169,6 +171,8 @@ isStrictInHead _ _           = False
 isStrictInElim :: Var n -> Elim a n -> Bool
 isStrictInElim _ Force   = False
 isStrictInElim x (App t) = isStrictIn x t
+isStrictInElim _ Fst     = False
+isStrictInElim _ Snd     = False
 
 -------------------------------------------------------------------------------
 -- Inline saturated
@@ -184,6 +188,19 @@ isStrictInElim x (App t) = isStrictIn x t
 -- >>> pp $ inlineSaturated' 0 term
 -- let* const = \ x y -> x
 -- in foo
+--
+-- With special eliminators:
+--
+-- >>> let term = let_ "fst" (lam_ "p" $ fst_ "p") $ "fst" :@ "somepair"
+-- >>> pp term
+-- let* fstPair!! = fstPair# ! !
+--      fst = \ p -> fstPair!! p
+-- in fst somepair
+--
+-- >>> pp $ inlineSaturated' 0 term
+-- let* fstPair!! = fstPair# ! !
+--      fst = \ p -> fstPair!! p
+-- in fstPair!! somepair
 --
 -- TODO:
 -- -- >>> pp $ rewriteWithDefinitions inlineUsedOnce $ simplify $ inlineSaturated' 0 term
@@ -238,6 +255,9 @@ inlineSaturated _ _ _ = Nothing
 -- >>> inlineSize $ lam_ "unused" Error
 -- 3
 --
+-- >>> inlineSize $ lam_ "p" $ fst_ "p"
+-- 1
+--
 -- Special cases:
 --
 -- >>> inlineSize $ delay_ $ force_ trace_ :@ lam_ "x" "x" :@ lam_ "y" "y"
@@ -266,6 +286,8 @@ inlineSize term = top 1 term where
     goE :: Integer -> Elim a n -> Integer
     goE acc Force          = acc - 1
     goE acc (App t)        = go (acc - 1) t
+    goE acc Fst            = acc - 1
+    goE acc Snd            = acc - 1
 
 -------------------------------------------------------------------------------
 -- CSE: Common bindings
