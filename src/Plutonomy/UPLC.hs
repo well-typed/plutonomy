@@ -14,7 +14,7 @@ module Plutonomy.UPLC (
 
 import Control.Lens              (Lens', lens, over, view)
 import Data.Text                 (Text)
-import Plutus.V1.Ledger.Api      (MintingPolicy (..), Validator (..))
+import Plutus.V1.Ledger.Api      (MintingPolicy (..), StakeValidator (..), Validator (..))
 import Plutus.V1.Ledger.Scripts  (Script (..))
 import PlutusCore.Default        (DefaultFun, DefaultUni)
 import Prettyprinter.Render.Text (renderIO, renderStrict)
@@ -74,6 +74,9 @@ instance HasUPLC Validator where
 
 instance HasUPLC MintingPolicy where
     uplc f (MintingPolicy s) = MintingPolicy <$> uplc f s
+
+instance HasUPLC StakeValidator where
+    uplc f (StakeValidator s) = StakeValidator <$> uplc f s
 
 instance HasUPLC Script where
     uplc f (Script s) = Script <$> uplc f s
