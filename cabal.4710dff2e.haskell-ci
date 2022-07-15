@@ -5,3 +5,6 @@ apt:      libsodium-dev
 
 raw-project
   flags: +plutus-4710dff2e
+
+  package plutonomy
+    haddock-options: "--optghc=-fplugin-opt PlutusTx.Plugin:defer-errors"
