@@ -1,0 +1,11 @@
+github-action-name: Haskell-CI f680ac697
+
+distribution: jammy
+branches:     master
+apt:          libsodium-dev libsecp256k1-dev
+
+raw-project
+  flags: +plutus-f680ac697
+
+  package plutonomy
+    haddock-options: "--optghc=-fplugin-opt PlutusTx.Plugin:defer-errors"

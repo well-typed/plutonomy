@@ -1,6 +1,6 @@
 cabal-version:      2.4
 name:               plutonomy
-version:            0.20220303
+version:            0.20220715
 synopsis:           An optimizer for untyped plutus core
 category:           Plutus
 description:        An optimizer for untyped plutus core.
@@ -15,7 +15,6 @@ extra-source-files:
   fixtures-1/*.txt
   fixtures-2/*.txt
   README.md
-
 
 source-repository head
   type:     git
@@ -59,6 +58,13 @@ flag plutus-1efbb276e
 flag plutus-4710dff2e
   description:
     Assume plutus version 4710dff2e30ce131191a6a1ccbe43595b2e3af24
+
+  manual:      True
+  default:     False
+
+flag plutus-f680ac697
+  description:
+    Assume plutus version f680ac6979e069fcc013e4389ee607ff5fa6672f (cardano-node 1.35.1)
 
   manual:      True
   default:     False
@@ -137,10 +143,15 @@ library
   x-docspec-options: -XOverloadedStrings -XDataKinds -XTypeApplications
 
   if True
-    if (flag(plutus-1efbb276e) && flag(plutus-4710dff2e))
-      build-depends: unbuildable-multiple-plutus-version-flags-on
+    if flag(plutus-1efbb276e)
+      if (flag(plutus-4710dff2e) || flag(plutus-f680ac697))
+        build-depends: unbuildable-multiple-plutus-version-flags-on
 
-    if (!flag(plutus-1efbb276e) && !flag(plutus-4710dff2e))
+    else
+      if (flag(plutus-4710dff2e) && flag(plutus-f680ac697))
+        build-depends: unbuildable-multiple-plutus-version-flags-on
+
+    if ((!flag(plutus-1efbb276e) && !flag(plutus-4710dff2e)) && !flag(plutus-f680ac697))
       build-depends: unbuildable-no-plutus-version-flag
 
   if True
@@ -149,6 +160,9 @@ library
 
     if flag(plutus-4710dff2e)
       cpp-options: -DPLUTUS_VER=2
+
+    if flag(plutus-f680ac697)
+      cpp-options: -DPLUTUS_VER=3
 
 test-suite plutonomy-tests
   import:         comm
@@ -170,3 +184,6 @@ test-suite plutonomy-tests
 
     if flag(plutus-4710dff2e)
       cpp-options: -DPLUTUS_VER=2
+
+    if flag(plutus-f680ac697)
+      cpp-options: -DPLUTUS_VER=3

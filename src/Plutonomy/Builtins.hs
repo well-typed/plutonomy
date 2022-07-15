@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -- | Information about builtins.
 module Plutonomy.Builtins where
 
@@ -34,7 +35,6 @@ builtinArity LessThanEqualsByteString = 2  -- [ bytestring, bytestring ] -> bool
 builtinArity Sha2_256                 = 1  -- [ bytestring ] -> bytestring
 builtinArity Sha3_256                 = 1  -- [ bytestring ] -> bytestring
 builtinArity Blake2b_256              = 1  -- [ bytestring ] -> bytestring
-builtinArity VerifySignature          = 3  -- [ bytestring, bytestring, bytestring ] -> bool
 builtinArity AppendString             = 2  -- [ string, string ] -> string
 builtinArity EqualsString             = 2  -- [ string, string ] -> bool
 builtinArity EncodeUtf8               = 1  -- [ string ] -> bytestring
@@ -63,3 +63,11 @@ builtinArity EqualsData               = 2  -- [ data, data ] -> bool
 builtinArity MkPairData               = 2  -- [ data, data ] -> pair(data, data)
 builtinArity MkNilData                = 1  -- [ unit ] -> list(data)
 builtinArity MkNilPairData            = 1  -- [ unit ] -> list(pair(data, data))
+#if PLUTUS_VER == 3
+builtinArity VerifyEd25519Signature          = 3  -- [ bytestring, bytestring, bytestring ] -> bool
+builtinArity VerifyEcdsaSecp256k1Signature   = 3  -- [ bytestring, bytestring, bytestring ] -> bool
+builtinArity VerifySchnorrSecp256k1Signature = 3  -- [ bytestring, bytestring, bytestring ] -> bool
+builtinArity SerialiseData                   = 1  -- [ data ] -> bytestring
+#else
+builtinArity VerifySignature          = 3  -- [ bytestring, bytestring, bytestring ] -> bool
+#endif

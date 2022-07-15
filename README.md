@@ -40,6 +40,7 @@ You need to toggle one of the flags:
 
 - plutus-1efbb276e
 - plutus-4710dff2e
+- plutus-f680ac697 (cardano-node-1.35.1)
 
 For example, add to your `cabal.project`:
 
