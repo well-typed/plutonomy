@@ -11,6 +11,8 @@ module Plutonomy.Raw.Rewrite (
     Bindings,
     TermWithArity (..),
     lookupBinding,
+    bindingsEmpty,
+    bindingsOnLet,
     bindingArity,
     isUnsaturatedApp,
     rewriteWithBindings,
@@ -51,16 +53,16 @@ import Plutonomy.Raw
 --
 --
 rewrite1 :: forall a m. Ord a => (forall n. Raw a n -> Maybe (Raw a n)) -> Raw a m -> Raw a m
-rewrite1 f = rewrite1With (const f) (\_ _ -> id) NoCtx
+rewrite1 f = rewrite1With (const f) (\_ _ -> weaken) NoCtx
 
 -- | Apply rewrites bottom up.
 rewrite :: forall a m. Ord a => (forall n. Raw a n -> Maybe (Raw a n)) -> Raw a m -> Raw a m
-rewrite f = rewriteWith (const f) (\_ _ -> id) NoCtx
+rewrite f = rewriteWith (const f) (\_ _ -> weaken) NoCtx
 
 grewrite
     :: forall a m ctx. (Rename ctx, Ord a)
     => (forall n. ctx n -> Raw a n -> Raw a n)                -- ^ local rewrite
-    -> (forall n. Name -> Raw a n -> ctx (S n) -> ctx (S n))  -- ^ let
+    -> (forall n. Name -> Raw a n -> ctx n -> ctx (S n))  -- ^ let
     -> ctx m                                                  -- ^ initial context
     -> Raw a m -> Raw a m
 grewrite f' onLet = go where
@@ -79,13 +81,13 @@ grewrite f' onLet = go where
     recur _ctx Error        = Error
     recur  ctx (Let n t s)  =
         let t' = go ctx t
-        in Let n t' (go (onLet n t' (weaken ctx)) s)
+        in Let n t' (go (onLet n t' ctx) s)
 
 -- | Apply rewrites bottom up.
 rewrite1With
     :: forall a m ctx. (Rename ctx, Ord a)
     => (forall n. ctx n -> Raw a n -> Maybe (Raw a n))        -- ^ local rewrite
-    -> (forall n. Name -> Raw a n -> ctx (S n) -> ctx (S n))  -- ^ let
+    -> (forall n. Name -> Raw a n -> ctx n -> ctx (S n))  -- ^ let
     -> ctx m                                                  -- ^ initial context
     -> Raw a m -> Raw a m
 rewrite1With f = grewrite f' where
@@ -101,7 +103,7 @@ rewrite1With f = grewrite f' where
 rewriteWith
     :: forall a m ctx. (Rename ctx, Ord a)
     => (forall n. ctx n -> Raw a n -> Maybe (Raw a n))        -- ^ local rewrite
-    -> (forall n. Name -> Raw a n -> ctx (S n) -> ctx (S n))  -- ^ let
+    -> (forall n. Name -> Raw a n -> ctx n -> ctx (S n))  -- ^ let
     -> ctx m                                                  -- ^ initial context
     -> Raw a m -> Raw a m
 rewriteWith f = grewrite f' where
@@ -119,7 +121,7 @@ rewriteAll f = fixedpoint (rewrite f)
 rewriteAllWith
     :: (Rename ctx, Ord a)
     => (forall n. ctx n -> Raw a n -> Maybe (Raw a n))        -- ^ local rewrite
-    -> (forall n. Name -> Raw a n -> ctx (S n) -> ctx (S n))  -- ^ let
+    -> (forall n. Name -> Raw a n -> ctx n -> ctx (S n))  -- ^ let
     -> ctx m                                                  -- ^ initial context
     -> Raw a m -> Raw a m
 rewriteAllWith f onLet ctx = fixedpoint (rewriteWith f onLet ctx)
@@ -149,22 +151,22 @@ rewrite1WithBindings f = rewrite1With f bindingsOnLet bindingsEmpty
 --
 -- The arity is not exact, but it is at least the given value.
 type TermWithArity :: Type -> Nat -> Type
-data TermWithArity a n = TermWithArity !Int !(Raw a n)
+data TermWithArity a n = TermWithArity !Name !Int !(Raw a n)
 
 bindingsEmpty :: Bindings m a
 bindingsEmpty = Bindings Map.empty
 
-bindingsOnLet :: Name -> Raw a m -> Bindings a ('S m) -> Bindings a ('S m)
-bindingsOnLet _ t (Bindings ctx) =
-    Bindings (Map.insert VZ (TermWithArity a (weaken t)) ctx)
+bindingsOnLet :: Name -> Raw a m -> Bindings a m -> Bindings a ('S m)
+bindingsOnLet n t (weaken -> Bindings ctx) =
+    Bindings (Map.insert VZ (TermWithArity n a (weaken t)) ctx)
   where
     a = arity t
 
 -- | Variable binding arity is at least the returned value.
 bindingArity :: Bindings a n -> Var n ->  Int
 bindingArity ctx x = case lookupBinding ctx x of
-    Just (TermWithArity a _) -> a
-    Nothing                  -> 0
+    Just (TermWithArity _n a _t) -> a
+    Nothing                      -> 0
 
 isUnsaturatedApp :: Bindings a n -> Raw a n -> Bool
 isUnsaturatedApp ctx t
@@ -180,7 +182,7 @@ lookupBinding :: Bindings a n -> Var n -> Maybe (TermWithArity a n)
 lookupBinding (Bindings ctx) x = Map.lookup x ctx
 
 instance Rename (TermWithArity a) where
-    r <@> TermWithArity a t = TermWithArity a (r <@> t)
+    r <@> TermWithArity n a t = TermWithArity n a (r <@> t)
 
 instance Rename (Bindings a) where
     r <@> Bindings ctx = Bindings $ Map.fromList . map (bimap (renameVar r) (r <@>)) . Map.toList $ ctx

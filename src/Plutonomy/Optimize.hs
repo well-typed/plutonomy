@@ -176,7 +176,7 @@ optimizeWith oo = H.fromRaw >>> pipeline >>> H.toRaw
     pipeline :: Ord a => H.Term a n -> H.Term a n
     pipeline = foldl' (>>>) id (
         -- add prelude (only if we are going to combine bindings)
-        [ H.toRaw >>> prelude >>> H.fromRaw | ooCombineBindings oo ] ++
+        [ H.toRaw >>> renameLets >>> prelude >>> H.fromRaw | ooCombineBindings oo ] ++
         -- inline constants
         [ H.rewrite H.inlineConstants | ooPreInlineConsts oo ] ++
         -- loop optimizer

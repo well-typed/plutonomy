@@ -31,6 +31,7 @@ module Plutonomy.Known (
     pattern RawDelayError,
     -- ** Fixed point
     pattern RawFix,
+    pattern RawZ,
 ) where
 
 import PlutusCore.Default (DefaultFun (..), DefaultUni (..), Some (..), ValueOf (..))
@@ -129,6 +130,7 @@ data Known
     | KnownTrace
     | KnownDelayError
     | KnownFix
+    | KnownZ
   deriving (Eq, Ord, Enum, Bounded)
 
 -- |
@@ -157,6 +159,7 @@ data Known
 -- trace#
 -- \ ~ -> ERROR
 -- \ f -> let* rec = \ rec0 arg -> f (rec0 rec0) arg in rec rec
+-- \ f -> let* x = \ y -> f (\ u -> y y u) in f (\ v -> x x v)
 --
 known :: [Known]
 known = [minBound .. maxBound]
@@ -185,6 +188,7 @@ knownName KnownTT           = "tt"
 knownName KnownTrace        = "trace"
 knownName KnownDelayError   = "~ERROR"
 knownName KnownFix          = "fix"
+knownName KnownZ            = "zComb"
 
 knownRaw :: Known -> Raw a n
 knownRaw KnownId           = RawId "x"
@@ -210,6 +214,7 @@ knownRaw KnownTT           = RawTT
 knownRaw KnownTrace        = RawTrace
 knownRaw KnownDelayError   = RawDelayError
 knownRaw KnownFix          = RawFix "f" "rec" "rec0" "arg"
+knownRaw KnownZ            = RawZ "f" "x" "v" "y" "u"
 
 isKnown :: Raw a n -> Maybe Known
 isKnown RawId {}           = Just KnownId
@@ -235,7 +240,8 @@ isKnown RawTT              = Just KnownTT
 isKnown RawTrace           = Just KnownTrace
 isKnown RawDelayError      = Just KnownDelayError
 isKnown RawFix {}          = Just KnownFix
-isKnown _                   = Nothing
+isKnown RawZ {}            = Just KnownZ
+isKnown _                  = Nothing
 
 pattern Known :: Known -> Raw (Either Known a) n
 pattern Known k = Free (Left k)
@@ -313,3 +319,9 @@ pattern RawDelayLT m n p = Delay (RawLT m n p)
 pattern RawFix :: Name -> Name -> Name -> Name -> Raw a n
 pattern RawFix f s s0 x
     = Lam f (Let s (Lam s0 (Lam x (Var2 :@ (Var1 :@ Var1) :@ Var0))) (Var0 :@ Var0))
+
+pattern RawZ :: Name -> Name -> Name -> Name -> Name -> Raw a n
+pattern RawZ f x v y u = Lam f
+    (Let x (Lam y (Var1 :@ Lam u (Var1 :@ Var1 :@ Var0)))
+           (Var1 :@ Lam v (Var1 :@ Var1 :@ Var0)))
+

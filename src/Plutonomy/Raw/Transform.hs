@@ -10,6 +10,7 @@ module Plutonomy.Raw.Transform (
     prelude,
     floatIn,
     floatIn',
+    renameLets,
     -- commonTraces,
     cse,
     -- * Rewrites of known terms
@@ -44,6 +45,7 @@ import Data.Bifunctor      (bimap)
 import Data.Char           (isAlphaNum)
 import Data.List           (sortOn)
 import Data.Map.Strict     (Map)
+import Data.Maybe          (fromMaybe)
 import Data.Monoid         (Sum (..))
 import Data.Ord            (Down (..))
 import Data.Void           (Void, absurd)
@@ -258,6 +260,36 @@ simplify = go where
     delay' t = Delay t
 
 -------------------------------------------------------------------------------
+-- Renames
+-------------------------------------------------------------------------------
+
+-- | Rename let bindings
+--
+-- >>> let term = let_ "x" (lam_ "y" "y") $ let_ "x" (lams_ ["x","y"] "x") "foo"
+-- >>> pp term
+-- let* x = \ y -> y
+--      x_0 = \ x_1 y_0 -> x_1
+-- in foo
+--
+-- >>> pp $ renameLets term
+-- let* id = \ y -> y
+--      const = \ x y_0 -> x
+-- in foo
+--
+renameLets :: forall n a . Ord a => Raw a n -> Raw a n
+renameLets = rewrite1With onTerm onLet bindingsEmpty where
+    onTerm :: Bindings a m -> Raw a m -> Maybe (Raw a m)
+    onTerm  ctx (Let (Name n) t s)
+        | T.length n < 2 -- rename one letter names only!
+        , Just (Name n') <- nameTerm ctx t
+        , T.length n' < 30 -- and new name is not super long!
+        = Just (Let (Name n') t s)
+    onTerm _ctx _term       = Nothing
+
+    onLet :: Name -> Raw a m -> Bindings a m -> Bindings a ('S m)
+    onLet n t ctx = bindingsOnLet (fromMaybe n (nameTerm ctx t)) t ctx
+
+-------------------------------------------------------------------------------
 -- CSE: Common bindings
 -------------------------------------------------------------------------------
 
@@ -277,8 +309,8 @@ simplify = go where
 --
 commonBindings :: forall n a. Ord a => Raw a n -> Raw a n
 commonBindings = rewriteWith f onLet (TermToVar Map.empty) where
-    onLet :: Name -> Raw a m -> TermToVar a (S m) -> TermToVar a (S m)
-    onLet _ t (TermToVar ctx)
+    onLet :: Name -> Raw a m -> TermToVar a m -> TermToVar a (S m)
+    onLet _ t (weaken -> TermToVar ctx)
         | isValue (const 0) t
         = TermToVar $ Map.insert (weaken t) VZ ctx
 
@@ -345,8 +377,8 @@ pattern TraceError t = Delay (Force (Force (Builtin Trace) :@ Constant (Some (Va
 -- foo (trace# ! "err"#t ()# !) (trace# ! "err"#t ()# !)
 --
 -- >>> pp $ cse 3 term
--- let* fail_err = \ ~ -> trace# ! "err"#t ()# !
--- in foo (fail_err !) (fail_err !)
+-- let* trace!_err_tt! = \ ~ -> trace# ! "err"#t ()# !
+-- in foo (trace!_err_tt! !) (trace!_err_tt! !)
 --
 cse :: forall a n. Ord a => Integer -> Raw a n -> Raw a n
 cse size = iterateWhileJust (cse' size)
@@ -356,12 +388,12 @@ cse' size term = case terms of
       [] -> Nothing
       t : _
           | isValue (const 0) t -> Just $ Let
-              (nameTerm t)
+              (fromMaybe "cse" $ nameTerm bindingsEmpty t)
               (vacuousFree t)
               $ rewrite (rewExact t) (weaken (L.over free Just term)) >>== maybe Var0 Free
 
           | otherwise -> Just $ Let
-              (nameTerm t)
+              (fromMaybe "cse" (nameTerm bindingsEmpty t))
               (Delay (vacuousFree t))
               $ rewrite (rewForced t) (weaken (L.over free Just term)) >>== maybe Var0 Free
   where
@@ -410,25 +442,39 @@ cse' size term = case terms of
         $ renameUPLC (\(UPLC.NamedDeBruijn _ i) -> UPLC.DeBruijn i)
         $ toUPLC t
 
-nameTerm :: Raw a n -> Name
-nameTerm (Delay t)
-    | (Builtin Trace, _ : ArgTerm (Constant (Some (ValueOf DefaultUniString msg))) : _) <- peelApp t
-    = Name ("fail_" <> T.take 30 (T.map rep msg))
+nameTerm :: Bindings a n -> Raw a n -> Maybe Name
+nameTerm _ t
+    | Just k <- isKnown t
+    = Just (knownName k)
+nameTerm ctx (Var x)
+    | Just (TermWithArity n _ _) <- lookupBinding ctx x
+    = Just n
+nameTerm _ (Builtin b)
+    = Just $ Name $ T.pack $ show $ PP.pretty b
+nameTerm ctx (Delay t)
+    | Just (Name n) <- nameTerm ctx t
+    = Just (Name (T.cons '~' n))
+nameTerm _ (Constant (Some (ValueOf DefaultUniString t)))
+    = Just $ Name $ T.take 15 $ T.map rep t
   where
     rep c = if isAlphaNum c then c else '_'
-nameTerm t
-    | (Builtin Trace, _ : ArgTerm (Constant (Some (ValueOf DefaultUniString msg))) : _) <- peelApp t
-    = Name ("fail_" <> T.take 30 (T.map rep msg))
+nameTerm _ (Constant (Some (ValueOf DefaultUniUnit ())))
+    = Just "unit"
+nameTerm _ (Constant (Some k))
+    = Just $ Name $ T.pack $ take 15 $ map rep $ show $ PP.pretty k
   where
     rep c = if isAlphaNum c then c else '_'
-nameTerm t | Just k <- isKnown t                        = knownName k
-nameTerm (Constant (Some (ValueOf DefaultUniString t))) = Name ("str_" <> T.take 30 (T.map rep t)) where
-    rep c = if isAlphaNum c then c else '_'
-nameTerm (Builtin EqualsInteger :@ Constant c)         = Name $ T.pack $
-    "equalsInteger_" ++ show (PP.pretty c)
-nameTerm (Builtin ConstrData :@ Constant c)            = Name $ T.pack $
-    "Constr" ++ show (PP.pretty c)
-nameTerm _                                              = "cse"
+nameTerm ctx (App f t)
+    | Just (Name fn) <- nameTerm ctx f
+    , Just (Name tn) <- nameTerm ctx t
+    = Just (Name (fn <> "_" <> tn))
+nameTerm ctx (Force t)
+    | Just (Name n) <- nameTerm ctx t
+    = Just (Name (T.snoc n '!'))
+nameTerm _ _
+    = Nothing
+
+
 
 newtype DList a = DList ([a] -> [a])
 
@@ -719,14 +765,14 @@ inlineSaturated' size = rewriteWithBindings (inlineSaturated size) where
 inlineSaturated :: Ord a => Integer -> Bindings a m -> Raw a m -> Maybe (Raw a m)
 inlineSaturated size ctx t@App{}
     | (Var f, args) <- peelApp t
-    , Just (TermWithArity a f') <- lookupBinding ctx f
+    , Just (TermWithArity _n a f') <- lookupBinding ctx f
     , 0 < a, a <= length args
     , inlineSize f' >= size
     = Just (appArgs_ f' args)
 
 inlineSaturated size ctx t@Force{}
     | (Var f, args) <- peelApp t
-    , Just (TermWithArity a f') <- lookupBinding ctx f
+    , Just (TermWithArity _n a f') <- lookupBinding ctx f
     , 0 < a, a <= length args
     , inlineSize f' >= size
     = Just (appArgs_ f' args)
@@ -824,6 +870,10 @@ data IfeRewrite
 --      ~GT = \ ~ ~ m8 n8 p8 -> n8
 --      ~LT = \ ~ ~ m9 n9 p9 -> p9
 --      fix = \ f -> let* rec = \ rec0 arg -> f (rec0 rec0) arg in rec rec
+--      zComb =
+--        \ f_0 ->
+--          let* x_0 = \ y_0 -> f_0 (\ u -> y_0 y_0 u)
+--          in f_0 (\ v -> x_0 x_0 v)
 -- in True
 --
 knownRewrites :: Ord a => Maybe TraceRewrite -> Maybe IfeRewrite -> Raw a n -> Raw a n
@@ -901,29 +951,31 @@ removeKnown t =
     knownLet KnownDelayGT $
     knownLet KnownDelayLT $
     knownLet KnownFix $
+    knownLet KnownZ $
     -- Delay Error is smaller rep then a variable.
     -- For uniswap contract the binding resulted in smaller fees, even size increased.
-    rename (mkRen $ VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS) t >>== \k -> case k of
+    rename (mkRen $ VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS) t >>== \k -> case k of
         Right x                -> Free x
-        Left KnownId           -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))))))))))))
-        Left KnownDelayId      -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ)))))))))))))))))
-        Left KnownDelayDelayId -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))))))))))
-        Left KnownConst        -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ)))))))))))))))
-        Left KnownFlipConst    -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))))))))
-        Left KnownTrue         -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ)))))))))))))
-        Left KnownFalse        -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))))))
-        Left KnownDelayTrue    -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ)))))))))))
-        Left KnownDelayFalse   -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))))
-        Left KnownFstOf3       -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ)))))))))
-        Left KnownSndOf3       -> Var (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))
-        Left KnownTrdOf3       -> Var (VS (VS (VS (VS (VS (VS (VS VZ)))))))
-        Left KnownEQ           -> Var (VS (VS (VS (VS (VS (VS VZ))))))
-        Left KnownGT           -> Var (VS (VS (VS (VS (VS VZ)))))
-        Left KnownLT           -> Var (VS (VS (VS (VS VZ))))
-        Left KnownDelayEQ      -> Var (VS (VS (VS VZ)))
-        Left KnownDelayGT      -> Var (VS (VS VZ))
-        Left KnownDelayLT      -> Var (VS VZ)
-        Left KnownFix          -> Var VZ
+        Left KnownId           -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ)))))))))))))))))))
+        Left KnownDelayId      -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))))))))))))
+        Left KnownDelayDelayId -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ)))))))))))))))))
+        Left KnownConst        -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))))))))))
+        Left KnownFlipConst    -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ)))))))))))))))
+        Left KnownTrue         -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))))))))
+        Left KnownFalse        -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ)))))))))))))
+        Left KnownDelayTrue    -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))))))
+        Left KnownDelayFalse   -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ)))))))))))
+        Left KnownFstOf3       -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))))
+        Left KnownSndOf3       -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ)))))))))
+        Left KnownTrdOf3       -> Var (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))
+        Left KnownEQ           -> Var (VS (VS (VS (VS (VS (VS (VS VZ)))))))
+        Left KnownGT           -> Var (VS (VS (VS (VS (VS (VS VZ))))))
+        Left KnownLT           -> Var (VS (VS (VS (VS (VS VZ)))))
+        Left KnownDelayEQ      -> Var (VS (VS (VS (VS VZ))))
+        Left KnownDelayGT      -> Var (VS (VS (VS VZ)))
+        Left KnownDelayLT      -> Var (VS (VS VZ))
+        Left KnownFix          -> Var (VS VZ)
+        Left KnownZ            -> Var VZ
         Left KnownDelayError   -> knownRaw KnownDelayError
         Left KnownIFE          -> knownRaw KnownIFE
         Left KnownTT           -> knownRaw KnownTT
