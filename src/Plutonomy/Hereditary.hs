@@ -1,8 +1,8 @@
-{-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE DataKinds          #-}
 {-# LANGUAGE DeriveTraversable  #-}
 {-# LANGUAGE GADTs              #-}
 {-# LANGUAGE KindSignatures     #-}
+{-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell    #-}
 module Plutonomy.Hereditary where
@@ -12,15 +12,16 @@ import Data.Kind          (Type)
 import Data.Sequence      (Seq)
 import Data.String        (IsString (..))
 import Data.Text          (Text)
+import PlutusCore.Data    (Data (..))
 import PlutusCore.Default (DefaultFun (..))
 
 import qualified Data.Sequence as Seq
 
 import Plutonomy.Builtins
 import Plutonomy.Constant
+import Plutonomy.Known    (pattern RawFix)
 import Plutonomy.Name
 import Plutonomy.Raw      (Raw)
-import Plutonomy.Known    (pattern RawFix)
 import Subst
 
 import qualified Plutonomy.Raw as Raw
@@ -90,8 +91,13 @@ data Head a n
 data Elim a n
     = App (Term a n)
     | Force
-    | Fst
-    | Snd
+    | E1 Elim1
+  deriving (Eq, Ord, Show)
+
+data Elim1
+    = E_Fst
+    | E_Snd
+    | E_IData
   deriving (Eq, Ord, Show)
 
 -- | Definition forms.
@@ -164,8 +170,7 @@ instance Rename (Head a) where
 instance Rename (Elim a) where
     r <@> App t = App (r <@> t)
     _ <@> Force = Force
-    _ <@> Fst   = Fst
-    _ <@> Snd   = Snd
+    _ <@> E1 e  = E1 e
 
 instance Vars (Term a) where
     var  = Var
@@ -197,8 +202,7 @@ substHead _sub HeadFix         = Defn (Neutral HeadFix Seq.Empty)
 substElim :: Sub (Term a) n m -> Elim a n -> Elim a m
 substElim  sub (App x) = App (subst sub x)
 substElim _sub Force   = Force
-substElim _sub Fst     = Fst
-substElim _sub Snd     = Snd
+substElim _sub (E1 e)  = E1 e
 
 instance Free Term where
     ret    = Free
@@ -219,8 +223,7 @@ bindHead HeadFix         _ = Defn (Neutral HeadFix Seq.empty)
 bindElim :: Elim a n -> (a -> Term b n) -> Elim b n
 bindElim (App x) k = App (bindTerm x k)
 bindElim Force   _ = Force
-bindElim Fst     _ = Fst
-bindElim Snd     _ = Snd
+bindElim (E1 e)  _ = E1 e
 
 bindDefn :: Defn a n -> (a -> Term b n) -> Term b n
 bindDefn (Neutral h xs) k = neutral_ (bindHead h k) (fmap (`bindElim` k) xs)
@@ -244,8 +247,7 @@ headVars _ _ HeadFix         = pure HeadFix
 elimVars :: Applicative f => (Var n -> f (Var m)) -> (a -> f b) -> Elim a n -> f (Elim b m)
 elimVars f g (App x) = App <$> vars f g x
 elimVars _ _ Force   = pure Force
-elimVars _ _ Fst     = pure Fst
-elimVars _ _ Snd     = pure Snd
+elimVars _ _ (E1 e)  = pure (E1 e)
 
 defnVars :: Applicative f => (Var n -> f (Var m)) -> (a -> f b) -> Defn a n -> f (Defn b m)
 defnVars f g (Neutral h xs) = Neutral <$> headVars f g h <*> traverse (elimVars f g) xs
@@ -306,8 +308,7 @@ termArity _        = 0
 elimArity :: Elim a n -> Int
 elimArity (App t) = termArity t
 elimArity Force   = 0
-elimArity Fst     = 0
-elimArity Snd     = 0
+elimArity (E1 _)  = 0
 
 defnArity :: Defn a n -> Int
 defnArity = go 0 where
@@ -331,8 +332,7 @@ isErrorTerm _     = False
 isErrorElim :: Elim n a -> Bool
 isErrorElim (App t) = isErrorTerm t
 isErrorElim Force   = False
-isErrorElim Fst     = False
-isErrorElim Snd     = False
+isErrorElim (E1 _)  = False
 
 -------------------------------------------------------------------------------
 -- * Normilising \"constructors\"
@@ -344,8 +344,12 @@ neutral_ = foldl' elim_
 elim_ :: Term a n -> Elim a n -> Term a n
 elim_ h Force   = force_ h
 elim_ h (App x) = app_ h x
-elim_ h Fst     = fst_ h
-elim_ h Snd     = snd_ h
+elim_ h (E1 e)  = elim1_ h e
+
+elim1_ :: Term a n -> Elim1 -> Term a n
+elim1_ h E_Fst    = fst_ h
+elim1_ h E_Snd    = snd_ h
+elim1_ h E_IData  = idata_ h
 
 -- | Let constructor on terms.
 --
@@ -483,6 +487,14 @@ lams_ n t = foldr lam_ t n
 fix_ :: Term a n
 fix_ = Defn (Neutral HeadFix Seq.Empty)
 
+builtin1_ :: Elim1 -> (Constant -> Maybe Constant) -> Term a n -> Term a n
+builtin1_ e _ (Defn (Neutral h xs)) = Defn (Neutral h (xs Seq.|> E1 e))
+builtin1_ _ _ (Defn (Delay _))    = Error
+builtin1_ _ _ (Defn Lam {})       = Error
+builtin1_ _ f (Defn (Constant c)) = maybe Error (Defn . Constant) (f c)
+builtin1_ e f (Let n t s)         = Let n t (builtin1_ e f s)
+builtin1_ _ _ Error               = Error
+
 -- |
 --
 -- >>> pp $ fst_ "foo"
@@ -490,13 +502,10 @@ fix_ = Defn (Neutral HeadFix Seq.Empty)
 -- in fstPair!! foo
 --
 fst_ :: Term a n -> Term a n
-fst_ (Defn (Neutral h xs)) = Defn (Neutral h (xs Seq.|> Fst))
-fst_ (Defn (Delay _))                                    = Error
-fst_ (Defn Lam {})                                       = Error
-fst_ (Defn (Constant (MkConstant (IsPair x _) (x', _)))) = Defn (Constant (MkConstant x x'))
-fst_ (Defn (Constant _))                                 = Error
-fst_ (Let n t s)                                         = Let n t (fst_ s)
-fst_ Error                                               = Error
+fst_ = builtin1_ E_Fst f where
+    f :: Constant -> Maybe Constant
+    f (MkConstant (IsPair x _) (x', _)) = Just (MkConstant x x')
+    f _                                 = Nothing
 
 -- |
 --
@@ -505,13 +514,21 @@ fst_ Error                                               = Error
 -- in sndPair!! bar
 --
 snd_ :: Term a n -> Term a n
-snd_ (Defn (Neutral h xs))                               = Defn (Neutral h (xs Seq.|> Snd))
-snd_ (Defn (Delay _))                                    = Error
-snd_ (Defn Lam {})                                       = Error
-snd_ (Defn (Constant (MkConstant (IsPair _ y) (_, y')))) = Defn (Constant (MkConstant y y'))
-snd_ (Defn (Constant _))                                 = Error
-snd_ (Let n t s)                                         = Let n t (snd_ s)
-snd_ Error                                               = Error
+snd_ = builtin1_ E_Snd f where
+    f :: Constant -> Maybe Constant
+    f (MkConstant (IsPair _ y) (_, y')) = Just (MkConstant y y')
+    f _                                 = Nothing
+
+--- |
+--
+-- >>> pp $ idata_ $ int_ 10
+-- 10#d
+--
+idata_ :: Term a n -> Term a n
+idata_ = builtin1_ E_IData f where
+    f :: Constant -> Maybe Constant
+    f (MkConstant IsInteger i) = Just (mkConstant (I i))
+    f _                        = Nothing
 
 -- | If-then-else
 ite_ :: Term a n
@@ -524,6 +541,9 @@ trace_ = Builtin Trace
 -- | String constant.
 str_ :: Text -> Term a n
 str_ t = Defn (Constant (mkConstant t))
+
+int_ :: Integer -> Term a n
+int_ i = Defn (Constant (mkConstant i))
 
 -- | Builtin unit constant.
 tt_ :: Term a n
@@ -542,10 +562,11 @@ toRaw t =
     id t'
   where
     t' = rename (mkRen $ VS . VS . VS) (toRaw' t) >>== \aux -> case aux of
-        Aux a      -> Raw.Free a
-        AuxFix     -> Raw.Var (VS (VS VZ))
-        AuxFstPair -> Raw.Var (VS VZ)
-        AuxSndPair -> Raw.Var VZ
+        Aux a         -> Raw.Free a
+        AuxFix        -> Raw.Var (VS (VS VZ))
+        AuxE1 E_Fst   -> Raw.Var (VS VZ)
+        AuxE1 E_Snd   -> Raw.Var VZ
+        AuxE1 E_IData -> Raw.Builtin IData
 
     rawLet :: Name -> Raw a n -> Raw a (S n) -> Raw a n
     rawLet name term s
@@ -560,14 +581,12 @@ toRaw' (Let n t s)    = Raw.Let n (defnToRaw t) (toRaw' s)
 data Aux a
     = Aux a
     | AuxFix
-    | AuxFstPair
-    | AuxSndPair
+    | AuxE1 Elim1
 
 elimToRaw :: Elim a n -> Raw.Arg (Aux a) n
 elimToRaw (App t) = Raw.ArgTerm (toRaw' t)
 elimToRaw Force   = Raw.ArgForce
-elimToRaw Fst     = Raw.ArgFun (Raw.Free AuxFstPair)
-elimToRaw Snd     = Raw.ArgFun (Raw.Free AuxSndPair)
+elimToRaw (E1 e)  = Raw.ArgFun (Raw.Free (AuxE1 e))
 
 headToRaw :: Head a n -> Raw (Aux a) n
 headToRaw (HeadVar x)     = Raw.Var x
@@ -588,6 +607,7 @@ fromRaw (Raw.Var x)           = Var x
 fromRaw (Raw.Free x)          = Free x
 fromRaw (Raw.Builtin FstPair) = Defn $ Delay $ Defn $ Delay $ Defn $ Lam "p" $ fst_ Var0
 fromRaw (Raw.Builtin SndPair) = Defn $ Delay $ Defn $ Delay $ Defn $ Lam "q" $ snd_ Var0
+fromRaw (Raw.Builtin IData)   = Defn $ Lam "i" $ idata_ Var0
 fromRaw (Raw.Builtin b)       = Builtin b
 fromRaw (Raw.Constant c)      = Defn (Constant c)
 fromRaw (Raw.Lam n t)         = Defn (Lam n (fromRaw t))
