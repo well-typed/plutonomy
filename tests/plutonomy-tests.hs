@@ -27,11 +27,11 @@ main = defaultMain $ testGroup "plutonomy"
 
 #if PLUTUS_VER == 3
         -- plutus-tx makes our life harder: https://github.com/input-output-hk/plutus/issues/4578
-        , toOptSize     = (1959,1695)
-        , toAggSize     = (1961,1665)
+        , toOptSize     = (1870,1661) -- 75% of original
+        , toAggSize     = (1872,1632)
 #else
-        , toOptSize     = (1891,1645) -- 65% of original
-        , toAggSize     = (1893,1615)
+        , toOptSize     = (1802,1611) -- 66% of original
+        , toAggSize     = (1804,1582)
 #endif
 
         , toTerm        = validatorToRaw $ MultiSig.validator' multisigParams

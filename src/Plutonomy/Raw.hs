@@ -22,6 +22,7 @@ import Subst
 -- >>> import Plutonomy
 -- >>> import Data.Text (Text)
 -- >>> import qualified Prettyprinter as PP
+-- >>> import PlutusCore.Default (DefaultFun (..))
 -- >>> let pp t = prettyRaw PP.pretty (t :: Raw Text Z)
 
 -- | Raw term representation.
@@ -122,6 +123,9 @@ pattern Var2 = Var V2
 -- >>> isValue (const 0) (force_ trace_ :@ str_ "err" :@ tt_)
 -- False
 --
+-- >>> isValue (const 0) (force_ $ force_ $ Builtin FstPair)
+-- True
+--
 isValue
     :: (Var n -> Int)  -- ^ arity of variables
     -> Raw a n
@@ -220,6 +224,7 @@ tt_ = Constant (mkConstant ())
 data Arg a n
     = ArgTerm (Raw a n)
     | ArgForce
+    | ArgFun (Raw a n)
   deriving Show
 
 peelApp
@@ -235,6 +240,7 @@ peelApp = fmap ($[]) . go where
 appArgs_ :: Raw a n -> [Arg a n] -> Raw a n
 appArgs_ = foldl' f where
     f t (ArgTerm s) = t :@ s
+    f t (ArgFun s)  = s :@ t
     f t ArgForce    = force_ t
 
 weakenArg :: Arg a n -> Arg a (S n)
@@ -243,7 +249,9 @@ weakenArg = mapArgTerm weaken
 mapArgTerm :: (Raw a n -> Raw b m) -> Arg a n -> Arg b m
 mapArgTerm f (ArgTerm t) = ArgTerm (f t)
 mapArgTerm _ ArgForce    = ArgForce
+mapArgTerm f (ArgFun t)  = ArgFun (f t)
 
 traverseArgTerm :: Applicative f => (Raw a n -> f (Raw b m)) -> Arg a n -> f (Arg b m)
 traverseArgTerm f (ArgTerm t) = ArgTerm <$> f t
 traverseArgTerm _ ArgForce    = pure ArgForce
+traverseArgTerm f (ArgFun t)  = ArgFun <$> f t

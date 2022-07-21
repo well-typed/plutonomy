@@ -105,6 +105,7 @@ prettyRaw ctx term = evalState (go 0 (L.over free ctx term)) Map.empty where
 
         goArg (ArgTerm t) = Just <$> go 11 t
         goArg ArgForce    = pure Nothing
+        goArg _           = error "TODO: shouldn't happen"
 
         isSimple (Var _)     = True
         isSimple (Builtin _) = True

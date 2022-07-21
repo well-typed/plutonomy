@@ -168,7 +168,7 @@ optimize = optimizeWith defaultOptimizerOptions
 
 -- | Optimize 'Term' using given 'OptimizerOptions'.
 optimizeWith :: Ord a => OptimizerOptions -> Raw a n -> Raw a n
-optimizeWith oo = H.fromRaw >>> pipeline >>> H.toRaw
+optimizeWith oo = H.fromRaw >>> pipeline >>> H.toRaw >>> cleanup
   where
     enable True  xs = xs
     enable False _ = []
@@ -192,8 +192,10 @@ optimizeWith oo = H.fromRaw >>> pipeline >>> H.toRaw
         -- last loop, we don't float out bindings anymore.
         [ loop
         -- and last cleanup
-        , H.toRaw >>> fixedpoint (simplify . rewriteWithBindings cleanupRewrites) >>> H.fromRaw
         ])
+
+    cleanup :: Ord a => Raw a n -> Raw a n
+    cleanup = fixedpoint (simplify . rewriteWithBindings cleanupRewrites)
 
     loop :: Ord a => H.Term a n -> H.Term a n
     loop  = foldl' (>>>) id $
@@ -225,4 +227,5 @@ optimizeWith oo = H.fromRaw >>> pipeline >>> H.toRaw
         [ inlineSaturated 0 | ooInlineSaturated oo ] ++
         [ floatOutLambda    | ooFloatOutLambda oo ] ++
         [ floatOutAppArg x  | Just x <- [ ooFloatOutAppArg oo ] ] ++
-        [ floatOutDelay     | ooFloatOutDelay oo ]
+        [ floatOutDelay     | ooFloatOutDelay oo ] ++
+        [ etaFun            | ooEtaFun oo ]
