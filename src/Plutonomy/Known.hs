@@ -34,11 +34,12 @@ module Plutonomy.Known (
     pattern RawZ,
 ) where
 
-import PlutusCore.Default (DefaultFun (..), DefaultUni (..), Some (..), ValueOf (..))
+import PlutusCore.Default (DefaultFun (..))
 import Subst              (Var (..))
 
 import Plutonomy.Name
 import Plutonomy.Raw
+import Plutonomy.Constant
 
 -- $setup
 -- >>> import Plutonomy
@@ -260,7 +261,7 @@ pattern RawIFE :: Raw a n
 pattern RawIFE = Builtin IfThenElse
 
 pattern RawTT :: Raw a n
-pattern RawTT = Constant (Some (ValueOf DefaultUniUnit ()))
+pattern RawTT = Constant (MkConstant IsUnit ())
 
 pattern RawTrace :: Raw a n
 pattern RawTrace = Builtin Trace

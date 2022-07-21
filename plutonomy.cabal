@@ -82,12 +82,12 @@ library
   exposed-modules:
     Plutonomy
     Plutonomy.Builtins
+    Plutonomy.Constant
     Plutonomy.Conversion
     Plutonomy.Hereditary
     Plutonomy.Hereditary.Rewrite
     Plutonomy.Hereditary.Transform
     Plutonomy.Known
-    Plutonomy.Lift
     Plutonomy.Linear
     Plutonomy.MissingH
     Plutonomy.Name

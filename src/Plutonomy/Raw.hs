@@ -6,15 +6,16 @@
 {-# LANGUAGE TemplateHaskell    #-}
 module Plutonomy.Raw where
 
-import Data.Void (Void)
+import Data.Kind          (Type)
 import Data.List          (foldl')
 import Data.String        (IsString (..))
-import Data.Kind     (Type)
 import Data.Text          (Text)
-import PlutusCore.Default (DefaultFun (..), DefaultUni (..), Some (..), ValueOf (..))
+import Data.Void          (Void)
+import PlutusCore.Default (DefaultFun (..))
 
-import Plutonomy.Name
 import Plutonomy.Builtins
+import Plutonomy.Constant
+import Plutonomy.Name
 import Subst
 
 -- $setup
@@ -35,7 +36,7 @@ data Raw (a :: Type) (n :: Nat)
     | App (Raw a n) (Raw a n)
     | Force (Raw a n)
     | Delay (Raw a n)
-    | Constant (Some (ValueOf DefaultUni))
+    | Constant Constant
     | Builtin DefaultFun
     | Error
 
@@ -207,10 +208,10 @@ trace_ :: Raw n a
 trace_ = Builtin Trace
 
 str_ :: Text -> Raw n a
-str_ t = Constant (Some (ValueOf DefaultUniString t))
+str_ t = Constant (mkConstant t)
 
 tt_ :: Raw n a
-tt_ = Constant (Some (ValueOf DefaultUniUnit ()))
+tt_ = Constant (mkConstant ())
 
 -------------------------------------------------------------------------------
 -- Peeling

@@ -12,6 +12,7 @@ import Subst              (Nat (Z), Var (..), instantiate1, absurdVar, vacuousFr
 
 import qualified UntypedPlutusCore as UPLC
 
+import Plutonomy.Constant
 import Plutonomy.Name
 import Plutonomy.Raw
 import Plutonomy.PlutusExtras
@@ -35,7 +36,7 @@ instance FromUPLC UPLC.Name where
             go (\n' -> if n == n' then VZ else VS (ctx n')) t
         go  ctx (UPLC.Force _ann t)    = Force (go ctx t)
         go  ctx (UPLC.Delay _ann t)    = Delay (go ctx t)
-        go _ctx (UPLC.Constant _ann c) = Constant c
+        go _ctx (UPLC.Constant _ann c) = Constant (constantFromPlutus c)
         go _ctx (UPLC.Builtin _ann b)  = Builtin b
         go _ctx (UPLC.Error _ann)      = Error
 
@@ -68,7 +69,7 @@ instance ToUPLC UPLC.Name where
         go (App f t)        = UPLC.Apply ann <$> go f <*> go t
         go (Force t)        = UPLC.Force ann <$> go t
         go (Delay t)        = UPLC.Delay ann <$> go t
-        go (Constant c)     = return (UPLC.Constant ann c)
+        go (Constant c)     = return (UPLC.Constant ann (constantToPlutus c))
         go (Builtin b)      = return (UPLC.Builtin ann b)
         go Error            = return (UPLC.Error ann)
 
