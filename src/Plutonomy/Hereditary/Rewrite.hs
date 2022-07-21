@@ -54,8 +54,7 @@ grewrite f' onLet = goTerm where
     goElim :: forall n. ctx n -> Elim a n -> Elim a n
     goElim _ctx Force          = Force
     goElim  ctx (App t)        = App (goTerm ctx t)
-    goElim _ctx Fst            = Fst
-    goElim _ctx Snd            = Snd
+    goElim _ctx (E1 e)         = E1 e
 
     rwTerm :: forall n. ctx n -> Term a n -> Term a n
     rwTerm _ctx Error          = Error
