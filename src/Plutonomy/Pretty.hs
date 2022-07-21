@@ -10,7 +10,6 @@ import Data.Maybe                (fromMaybe)
 import Data.Text                 (Text)
 import Data.Void                 (Void, absurd)
 import PlutusCore.Data           (Data (..))
-import PlutusCore.Default        (DefaultUni (..), Some (..), ValueOf (..))
 import Prettyprinter             ((<+>))
 import Subst                     (Nat (Z), instantiate1, free)
 
@@ -20,6 +19,7 @@ import qualified Data.Text.Encoding as TE
 import qualified Prettyprinter      as PP
 import qualified Control.Lens as L
 
+import Plutonomy.Constant
 import Plutonomy.Name
 import Plutonomy.Raw
 
@@ -71,11 +71,11 @@ prettyRaw ctx term = evalState (go 0 (L.over free ctx term)) Map.empty where
         parens (d > 0) $ ppLet defs t'
 
     -- We slightly change how constants are printed:
-    go _d (Constant (Some (ValueOf DefaultUniData d))) =
+    go _d (Constant (MkConstant IsData d)) =
         pure (prettyData d <> "#d")
-    go _d (Constant (Some (ValueOf DefaultUniString t))) =
+    go _d (Constant (MkConstant IsText t)) =
         pure (PP.viaShow t <> "#t")
-    go _d (Constant c@(Some (ValueOf DefaultUniByteString bs))) =
+    go _d (Constant c@(MkConstant IsByteString bs)) =
         pure $ case TE.decodeUtf8' bs of
             Right t | T.all isAsciiPrint t -> PP.viaShow t <> "#b"
             _                              -> PP.pretty c <> "#b"

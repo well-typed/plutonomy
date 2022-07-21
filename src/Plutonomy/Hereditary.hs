@@ -12,11 +12,12 @@ import Data.Kind          (Type)
 import Data.Sequence      (Seq)
 import Data.String        (IsString (..))
 import Data.Text          (Text)
-import PlutusCore.Default (DefaultFun (..), DefaultUni (..), Some (..), ValueOf (..))
+import PlutusCore.Default (DefaultFun (..))
 
 import qualified Data.Sequence as Seq
 
 import Plutonomy.Builtins
+import Plutonomy.Constant
 import Plutonomy.Name
 import Plutonomy.Raw      (Raw)
 import Plutonomy.Known    (pattern RawFix)
@@ -107,7 +108,7 @@ data Defn a n
     = Neutral (Head a n) (Spine a n)
     | Lam Name (Term a (S n))
     | Delay (Term a n)
-    | Constant (Some (ValueOf DefaultUni))
+    | Constant Constant
   deriving (Eq, Ord, Show)
 
 type Spine a n = Seq (Elim a n)
@@ -476,11 +477,11 @@ trace_ = Builtin Trace
 
 -- | String constant.
 str_ :: Text -> Term a n
-str_ t = Defn (Constant (Some (ValueOf DefaultUniString t)))
+str_ t = Defn (Constant (mkConstant t))
 
 -- | Builtin unit constant.
 tt_ :: Term a n
-tt_ = Defn (Constant (Some (ValueOf DefaultUniUnit ())))
+tt_ = Defn (Constant (mkConstant ()))
 
 -------------------------------------------------------------------------------
 -- * Conversion

@@ -49,7 +49,7 @@ import Data.Maybe          (fromMaybe)
 import Data.Monoid         (Sum (..))
 import Data.Ord            (Down (..))
 import Data.Void           (Void, absurd)
-import PlutusCore.Default  (DefaultFun (..), DefaultUni (..), Some (..), ValueOf (..))
+import PlutusCore.Default  (DefaultFun (..))
 import Subst
        (Free (..), Nat (S, Z), Rename (..), Var (..), Vars (..), bump, closed, closedFree, compRen, instantiate1, mkRen, rename, unusedVar,
        unusedVar2, unusedVar3, unvar, vacuousFree, weaken, weakenRen)
@@ -59,6 +59,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text       as T
 import qualified Prettyprinter   as PP
 
+import Plutonomy.Constant
 import Plutonomy.Conversion
 import Plutonomy.Known
 import Plutonomy.MissingH
@@ -454,13 +455,13 @@ nameTerm _ (Builtin b)
 nameTerm ctx (Delay t)
     | Just (Name n) <- nameTerm ctx t
     = Just (Name (T.cons '~' n))
-nameTerm _ (Constant (Some (ValueOf DefaultUniString t)))
+nameTerm _ (Constant (MkConstant IsText t))
     = Just $ Name $ T.take 15 $ T.map rep t
   where
     rep c = if isAlphaNum c then c else '_'
-nameTerm _ (Constant (Some (ValueOf DefaultUniUnit ())))
+nameTerm _ (Constant (MkConstant IsUnit ()))
     = Just "unit"
-nameTerm _ (Constant (Some k))
+nameTerm _ (Constant k)
     = Just $ Name $ T.pack $ take 15 $ map rep $ show $ PP.pretty k
   where
     rep c = if isAlphaNum c then c else '_'
