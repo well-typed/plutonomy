@@ -7,6 +7,7 @@
 {-# LANGUAGE TemplateHaskell    #-}
 module Plutonomy.Hereditary where
 
+import Data.ByteString    (ByteString)
 import Data.Foldable      (foldl', toList)
 import Data.Kind          (Type)
 import Data.Sequence      (Seq)
@@ -98,6 +99,7 @@ data Elim1
     = E_Fst
     | E_Snd
     | E_IData
+    | E_BData
   deriving (Eq, Ord, Show)
 
 -- | Definition forms.
@@ -350,6 +352,7 @@ elim1_ :: Term a n -> Elim1 -> Term a n
 elim1_ h E_Fst    = fst_ h
 elim1_ h E_Snd    = snd_ h
 elim1_ h E_IData  = idata_ h
+elim1_ h E_BData  = bdata_ h
 
 -- | Let constructor on terms.
 --
@@ -530,6 +533,16 @@ idata_ = builtin1_ E_IData f where
     f (MkConstant IsInteger i) = Just (mkConstant (I i))
     f _                        = Nothing
 
+-- |
+--
+-- >>> pp $ bdata_ $ bytestring_ "foobar"
+-- "foobar"#d
+bdata_ :: Term a n -> Term a n
+bdata_ = builtin1_ E_BData f where
+    f :: Constant -> Maybe Constant
+    f (MkConstant IsByteString bs) = Just (mkConstant (B bs))
+    f _                            = Nothing
+
 -- | If-then-else
 ite_ :: Term a n
 ite_ = Builtin IfThenElse
@@ -542,8 +555,13 @@ trace_ = Builtin Trace
 str_ :: Text -> Term a n
 str_ t = Defn (Constant (mkConstant t))
 
+-- | Integer constant
 int_ :: Integer -> Term a n
 int_ i = Defn (Constant (mkConstant i))
+
+-- | Bytestring constant
+bytestring_ :: ByteString -> Term a n
+bytestring_ bs = Defn (Constant (mkConstant bs))
 
 -- | Builtin unit constant.
 tt_ :: Term a n
@@ -567,6 +585,7 @@ toRaw t =
         AuxE1 E_Fst   -> Raw.Var (VS VZ)
         AuxE1 E_Snd   -> Raw.Var VZ
         AuxE1 E_IData -> Raw.Builtin IData
+        AuxE1 E_BData -> Raw.Builtin BData
 
     rawLet :: Name -> Raw a n -> Raw a (S n) -> Raw a n
     rawLet name term s
@@ -608,6 +627,7 @@ fromRaw (Raw.Free x)          = Free x
 fromRaw (Raw.Builtin FstPair) = Defn $ Delay $ Defn $ Delay $ Defn $ Lam "p" $ fst_ Var0
 fromRaw (Raw.Builtin SndPair) = Defn $ Delay $ Defn $ Delay $ Defn $ Lam "q" $ snd_ Var0
 fromRaw (Raw.Builtin IData)   = Defn $ Lam "i" $ idata_ Var0
+fromRaw (Raw.Builtin BData)   = Defn $ Lam "bs" $ bdata_ Var0
 fromRaw (Raw.Builtin b)       = Builtin b
 fromRaw (Raw.Constant c)      = Defn (Constant c)
 fromRaw (Raw.Lam n t)         = Defn (Lam n (fromRaw t))
