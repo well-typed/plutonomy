@@ -96,7 +96,8 @@ data Elim a n
   deriving (Eq, Ord, Show)
 
 data Elim1
-    = E_Fst
+    = E_IfThenElse
+    | E_Fst
     | E_Snd
     | E_IData
     | E_BData
@@ -349,10 +350,11 @@ elim_ h (App x) = app_ h x
 elim_ h (E1 e)  = elim1_ h e
 
 elim1_ :: Term a n -> Elim1 -> Term a n
-elim1_ h E_Fst    = fst_ h
-elim1_ h E_Snd    = snd_ h
-elim1_ h E_IData  = idata_ h
-elim1_ h E_BData  = bdata_ h
+elim1_ h E_IfThenElse = ite_ h
+elim1_ h E_Fst        = fst_ h
+elim1_ h E_Snd        = snd_ h
+elim1_ h E_IData      = idata_ h
+elim1_ h E_BData      = bdata_ h
 
 -- | Let constructor on terms.
 --
@@ -490,11 +492,11 @@ lams_ n t = foldr lam_ t n
 fix_ :: Term a n
 fix_ = Defn (Neutral HeadFix Seq.Empty)
 
-builtin1_ :: Elim1 -> (Constant -> Maybe Constant) -> Term a n -> Term a n
+builtin1_ :: Elim1 -> (forall m. Constant -> Maybe (Defn a m)) -> Term a n -> Term a n
 builtin1_ e _ (Defn (Neutral h xs)) = Defn (Neutral h (xs Seq.|> E1 e))
 builtin1_ _ _ (Defn (Delay _))    = Error
 builtin1_ _ _ (Defn Lam {})       = Error
-builtin1_ _ f (Defn (Constant c)) = maybe Error (Defn . Constant) (f c)
+builtin1_ _ f (Defn (Constant c)) = maybe Error Defn (f c)
 builtin1_ e f (Let n t s)         = Let n t (builtin1_ e f s)
 builtin1_ _ _ Error               = Error
 
@@ -506,8 +508,8 @@ builtin1_ _ _ Error               = Error
 --
 fst_ :: Term a n -> Term a n
 fst_ = builtin1_ E_Fst f where
-    f :: Constant -> Maybe Constant
-    f (MkConstant (IsPair x _) (x', _)) = Just (MkConstant x x')
+    f :: Constant -> Maybe (Defn a n)
+    f (MkConstant (IsPair x _) (x', _)) = Just (Constant (MkConstant x x'))
     f _                                 = Nothing
 
 -- |
@@ -518,8 +520,8 @@ fst_ = builtin1_ E_Fst f where
 --
 snd_ :: Term a n -> Term a n
 snd_ = builtin1_ E_Snd f where
-    f :: Constant -> Maybe Constant
-    f (MkConstant (IsPair _ y) (_, y')) = Just (MkConstant y y')
+    f :: Constant -> Maybe (Defn a m)
+    f (MkConstant (IsPair _ y) (_, y')) = Just (Constant (MkConstant y y'))
     f _                                 = Nothing
 
 --- |
@@ -529,8 +531,8 @@ snd_ = builtin1_ E_Snd f where
 --
 idata_ :: Term a n -> Term a n
 idata_ = builtin1_ E_IData f where
-    f :: Constant -> Maybe Constant
-    f (MkConstant IsInteger i) = Just (mkConstant (I i))
+    f :: Constant -> Maybe (Defn a m)
+    f (MkConstant IsInteger i) = Just (Constant (mkConstant (I i)))
     f _                        = Nothing
 
 -- |
@@ -539,13 +541,17 @@ idata_ = builtin1_ E_IData f where
 -- "foobar"#d
 bdata_ :: Term a n -> Term a n
 bdata_ = builtin1_ E_BData f where
-    f :: Constant -> Maybe Constant
-    f (MkConstant IsByteString bs) = Just (mkConstant (B bs))
+    f :: Constant -> Maybe (Defn a m)
+    f (MkConstant IsByteString bs) = Just (Constant (mkConstant (B bs)))
     f _                            = Nothing
 
 -- | If-then-else
-ite_ :: Term a n
-ite_ = Builtin IfThenElse
+ite_ :: Term a n -> Term a n
+ite_ = builtin1_ E_IfThenElse f where
+    f :: Constant -> Maybe (Defn a m)
+    f (MkConstant IsBool True)  = Just (Lam "c1" $ Defn $ Lam "c2" Var1)
+    f (MkConstant IsBool False) = Just (Lam "c1" $ Defn $ Lam "c2" Var0)
+    f _                         = Nothing
 
 -- | Trace
 trace_ :: Term a n
@@ -574,18 +580,20 @@ tt_ = Defn (Constant (mkConstant ()))
 -- | Convert 'Term' to 'Raw'.
 toRaw :: Term a n -> Raw a n
 toRaw t =
-    rawLet "fix"       (RawFix "f" "s" "s0" "x") $
-    rawLet "fstPair!!" (Raw.Force $ Raw.Force $ Raw.Builtin FstPair) $
-    rawLet "sndPair!!" (Raw.Force $ Raw.Force $ Raw.Builtin SndPair) $
+    rawLet "fix"         (RawFix "f" "s" "s0" "x") $
+    rawLet "ifThenElse!" (Raw.Force $ Raw.Builtin IfThenElse) $
+    rawLet "fstPair!!"   (Raw.Force $ Raw.Force $ Raw.Builtin FstPair) $
+    rawLet "sndPair!!"   (Raw.Force $ Raw.Force $ Raw.Builtin SndPair) $
     id t'
   where
-    t' = rename (mkRen $ VS . VS . VS) (toRaw' t) >>== \aux -> case aux of
-        Aux a         -> Raw.Free a
-        AuxFix        -> Raw.Var (VS (VS VZ))
-        AuxE1 E_Fst   -> Raw.Var (VS VZ)
-        AuxE1 E_Snd   -> Raw.Var VZ
-        AuxE1 E_IData -> Raw.Builtin IData
-        AuxE1 E_BData -> Raw.Builtin BData
+    t' = rename (mkRen $ VS . VS . VS . VS) (toRaw' t) >>== \aux -> case aux of
+        Aux a              -> Raw.Free a
+        AuxFix             -> Raw.Var (VS (VS (VS VZ)))
+        AuxE1 E_IfThenElse -> Raw.Var (VS (VS VZ))
+        AuxE1 E_Fst        -> Raw.Var (VS VZ)
+        AuxE1 E_Snd        -> Raw.Var VZ
+        AuxE1 E_IData      -> Raw.Builtin IData
+        AuxE1 E_BData      -> Raw.Builtin BData
 
     rawLet :: Name -> Raw a n -> Raw a (S n) -> Raw a n
     rawLet name term s
@@ -621,18 +629,19 @@ defnToRaw (Lam n t)      = Raw.Lam n (toRaw' t)
 
 -- | Convert 'Raw' to 'Term'.
 fromRaw :: Raw a n -> Term a n
-fromRaw (RawFix _ _ _ _)      = Defn (Neutral HeadFix Seq.Empty)
-fromRaw (Raw.Var x)           = Var x
-fromRaw (Raw.Free x)          = Free x
-fromRaw (Raw.Builtin FstPair) = Defn $ Delay $ Defn $ Delay $ Defn $ Lam "p" $ fst_ Var0
-fromRaw (Raw.Builtin SndPair) = Defn $ Delay $ Defn $ Delay $ Defn $ Lam "q" $ snd_ Var0
-fromRaw (Raw.Builtin IData)   = Defn $ Lam "i" $ idata_ Var0
-fromRaw (Raw.Builtin BData)   = Defn $ Lam "bs" $ bdata_ Var0
-fromRaw (Raw.Builtin b)       = Builtin b
-fromRaw (Raw.Constant c)      = Defn (Constant c)
-fromRaw (Raw.Lam n t)         = Defn (Lam n (fromRaw t))
-fromRaw (Raw.Delay t)         = Defn (Delay (fromRaw t))
-fromRaw (Raw.App f t)         = app_ (fromRaw f) (fromRaw t)
-fromRaw (Raw.Let n t s)       = mkLet n (fromRaw t) (fromRaw s)
-fromRaw (Raw.Force t)         = force_ (fromRaw t)
-fromRaw Raw.Error             = Error
+fromRaw (RawFix _ _ _ _)         = Defn (Neutral HeadFix Seq.Empty)
+fromRaw (Raw.Var x)              = Var x
+fromRaw (Raw.Free x)             = Free x
+fromRaw (Raw.Builtin IfThenElse) = Defn $ Delay $ Defn $ Lam "x" $ ite_ Var0
+fromRaw (Raw.Builtin FstPair)    = Defn $ Delay $ Defn $ Delay $ Defn $ Lam "p" $ fst_ Var0
+fromRaw (Raw.Builtin SndPair)    = Defn $ Delay $ Defn $ Delay $ Defn $ Lam "q" $ snd_ Var0
+fromRaw (Raw.Builtin IData)      = Defn $ Lam "i" $ idata_ Var0
+fromRaw (Raw.Builtin BData)      = Defn $ Lam "bs" $ bdata_ Var0
+fromRaw (Raw.Builtin b)          = Builtin b
+fromRaw (Raw.Constant c)         = Defn (Constant c)
+fromRaw (Raw.Lam n t)            = Defn (Lam n (fromRaw t))
+fromRaw (Raw.Delay t)            = Defn (Delay (fromRaw t))
+fromRaw (Raw.App f t)            = app_ (fromRaw f) (fromRaw t)
+fromRaw (Raw.Let n t s)          = mkLet n (fromRaw t) (fromRaw s)
+fromRaw (Raw.Force t)            = force_ (fromRaw t)
+fromRaw Raw.Error                = Error

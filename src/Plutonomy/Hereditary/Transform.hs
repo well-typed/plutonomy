@@ -19,7 +19,7 @@ module Plutonomy.Hereditary.Transform (
 
 import Control.Applicative (Const (..))
 import Data.Bifunctor      (bimap)
-import Data.Foldable       (foldl')
+import Data.Foldable       (foldl', toList)
 import Data.Map.Strict     (Map)
 import Data.Monoid         (Sum (..))
 import Data.Sequence       (pattern (:<|), pattern (:|>))
@@ -540,19 +540,42 @@ etaFun _ _ = Nothing
 
 -- | Replace if-then-else lambdas with delays
 --
--- >>> let term = force_ ite_ :@ "condition" :@ lam_ "ds" "foo" :@ lam_ "ds" "bar" :@ "tt"
+-- >>> let term = ite_ "condition" :@ lam_ "ds" "foo" :@ lam_ "ds" "bar" :@ "tt"
 -- >>> pp term
--- ifThenElse# ! condition (\ ds -> foo) (\ ds_0 -> bar) tt
+-- let* ifThenElse! = ifThenElse# !
+-- in ifThenElse! condition (\ ds -> foo) (\ ds_0 -> bar) tt
 --
 -- >>> pp $ rewriteWithDefinitions ifLambda term
--- ifThenElse# ! condition (\ ~ -> foo) (\ ~ -> bar) !
+-- let* ifThenElse! = ifThenElse# !
+-- in ifThenElse! condition (\ ~ -> foo) (\ ~ -> bar) !
 --
-ifLambda :: Definitions a n -> Term a n -> Maybe (Term a n)
+ifLambda :: forall a n. Definitions a n -> Term a n -> Maybe (Term a n)
+{-
 ifLambda ctx (Defn (Neutral (HeadBuiltin IfThenElse) (Force :<| App c :<| App (Defn (Lam _n1 t1)) :<| App (Defn (Lam _n2 t2)) :<| App v :<| sp)))
     | isValue (definitionArity ctx) (const 0) v
     , Just t1' <- bound unusedVar t1
     , Just t2' <- bound unusedVar t2
     = Just $ Defn (Neutral (HeadBuiltin IfThenElse) (Force :<| App c :<| App (Defn (Delay t1')) :<| App (Defn (Delay t2')) :<| Force :<| sp))
+-}
+ifLambda ctx (Defn (Neutral h es)) = Defn . Neutral h . Seq.fromList <$> go1 (toList es) where
+    go1 :: [Elim a n] -> Maybe [Elim a n]
+    go1 (E1 E_IfThenElse : App (Defn (Lam _n1 t1)) : App (Defn (Lam _n2 t2)) : App v : es)
+        | isValue (definitionArity ctx) (const 0) v
+        , Just t1' <- bound unusedVar t1
+        , Just t2' <- bound unusedVar t2
+        = Just $ E1 E_IfThenElse : App (Defn (Delay t1')) : App (Defn (Delay t2')) : Force : go es
+    go1 (e:es) = (e :) <$> go1 es
+    go1 [] = Nothing
+
+    go :: [Elim a n] -> [Elim a n]
+    go (E1 E_IfThenElse : App (Defn (Lam _n1 t1)) : App (Defn (Lam _n2 t2)) : App v : es)
+        | isValue (definitionArity ctx) (const 0) v
+        , Just t1' <- bound unusedVar t1
+        , Just t2' <- bound unusedVar t2
+        = E1 E_IfThenElse : App (Defn (Delay t1')) : App (Defn (Delay t2')) : Force : go es
+    go (e:es) = e:go es
+    go [] = []
+
 ifLambda _ _ = Nothing
 
 -- | Lambda float.
@@ -675,7 +698,7 @@ floatOutDelay _ _ = Nothing
 --
 -- Floats out of if then else too
 --
--- >>> let term = force_ ite_  :@ let_ "n" (delay_ ("foo" :@ "bar")) ("n" :@ "n") :@ "consequence" :@ "alternative"
+-- >>> let term = ite_  (let_ "n" (delay_ ("foo" :@ "bar")) ("n" :@ "n")) :@ "consequence" :@ "alternative"
 -- >>> pp term
 --ifThenElse# ! (let* n = \ ~ -> foo bar in n n) consequence alternative
 --
