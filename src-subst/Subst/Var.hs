@@ -18,6 +18,7 @@ module Subst.Var (
     renameVar,
     idRen,
     liftRen,
+    skipRen,
     compRen,
     bumpRen,
     swapRen,
@@ -164,6 +165,9 @@ liftRen (Ren f) = Ren (go f)
     go _ VZ     = VZ
     go g (VS x) = VS (g x)
 
+skipRen :: Ren n m -> Ren n (S m)
+skipRen (Ren f) = Ren (VS . f)
+
 -- we need to bind tighter then <@>
 infixr 9 `compRen`
 
@@ -177,7 +181,7 @@ instance C.Category Ren where
 
 -- | Weakening of a context.
 weakenRen :: Ren n (S n)
-weakenRen = Ren VS
+weakenRen = skipRen idRen
 
 -- | Common renaming weakening under one variable.
 --

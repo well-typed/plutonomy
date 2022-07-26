@@ -94,6 +94,7 @@ library
     Plutonomy.Optimize
     Plutonomy.Pretty
     Plutonomy.Raw
+    Plutonomy.Raw.Lets
     Plutonomy.Raw.Rewrite
     Plutonomy.Raw.Transform
     Plutonomy.Scripts
