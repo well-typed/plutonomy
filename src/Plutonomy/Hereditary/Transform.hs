@@ -150,8 +150,7 @@ isForcedInHead _ _           _  = False
 isForcedInElim :: Var n -> Elim a n -> Bool
 isForcedInElim _ Force   = False
 isForcedInElim x (App t) = isForcedIn x t
-isForcedInElim _ Fst     = False
-isForcedInElim _ Snd     = False
+isForcedInElim _ (E1 _)  = False
 
 isStrictIn :: Var n -> Term a n -> Bool
 isStrictIn x (Defn d)     = isStrictInDefn x d
@@ -171,8 +170,7 @@ isStrictInHead _ _           = False
 isStrictInElim :: Var n -> Elim a n -> Bool
 isStrictInElim _ Force   = False
 isStrictInElim x (App t) = isStrictIn x t
-isStrictInElim _ Fst     = False
-isStrictInElim _ Snd     = False
+isStrictInElim _ (E1 _)  = False
 
 -------------------------------------------------------------------------------
 -- Inline saturated
@@ -286,8 +284,7 @@ inlineSize term = top 1 term where
     goE :: Integer -> Elim a n -> Integer
     goE acc Force          = acc - 1
     goE acc (App t)        = go (acc - 1) t
-    goE acc Fst            = acc - 1
-    goE acc Snd            = acc - 1
+    goE acc (E1 _)         = acc - 1
 
 -------------------------------------------------------------------------------
 -- CSE: Common bindings
