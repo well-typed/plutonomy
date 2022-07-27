@@ -67,6 +67,7 @@ import Plutonomy.Name
 import Plutonomy.PlutusExtras
 import Plutonomy.Pretty
 import Plutonomy.Raw
+import Plutonomy.Raw.Lets
 import Plutonomy.Raw.Rewrite
 
 import qualified UntypedPlutusCore as UPLC
@@ -851,31 +852,9 @@ data IfeRewrite
 
 -- | Apply rewrites using the facts about 'Known' terms.
 --
--- >>> pp $ knownRewrites (Just TraceRewrite) (Just IfeRewrite) $ let_ "True" (RawTrue "t" "f") "True"
--- let* id = \ x -> x
---      ~id = \ ~ y -> y
---      ~~id = \ ~ ~ z -> z
---      const = \ u1 v1 -> u1
---      flipConst = \ u2 v2 -> v2
---      True = \ ~ true1 false1 -> true1
---      False = \ ~ true2 false2 -> false2
---      ~True = \ ~ ~ true3 false3 -> true3
---      ~False = \ ~ ~ true4 false4 -> false4
---      fstOf3 = \ m1 n1 p1 -> m1
---      sndOf3 = \ m2 n2 p2 -> n2
---      trdOf3 = \ m3 n3 p3 -> p3
---      EQ = \ ~ m4 n4 p4 -> m4
---      GT = \ ~ m5 n5 p5 -> n5
---      LT = \ ~ m6 n6 p6 -> p6
---      ~EQ = \ ~ ~ m7 n7 p7 -> m7
---      ~GT = \ ~ ~ m8 n8 p8 -> n8
---      ~LT = \ ~ ~ m9 n9 p9 -> p9
---      fix = \ f -> let* rec = \ rec0 arg -> f (rec0 rec0) arg in rec rec
---      zComb =
---        \ f_0 ->
---          let* x_0 = \ y_0 -> f_0 (\ u -> y_0 y_0 u)
---          in f_0 (\ v -> x_0 x_0 v)
--- in True
+-- >>> pp $ knownRewrites (Just TraceRewrite) (Just IfeRewrite) $ lam_ "g" $ "g" :@ RawTrue "t" "f"
+-- let* True = \ ~ true1 false1 -> true1
+-- in \ g -> g True
 --
 knownRewrites :: Ord a => Maybe TraceRewrite -> Maybe IfeRewrite -> Raw a n -> Raw a n
 knownRewrites traceRewrite' ifeRewrite =
@@ -932,58 +911,9 @@ addKnown = rewrite f where
     f _ = Nothing
 
 removeKnown :: Raw (Either Known a) n -> Raw a n
-removeKnown t =
-    knownLet KnownId $
-    knownLet KnownDelayId $
-    knownLet KnownDelayDelayId $
-    knownLet KnownConst $
-    knownLet KnownFlipConst $
-    knownLet KnownTrue $
-    knownLet KnownFalse $
-    knownLet KnownDelayTrue $
-    knownLet KnownDelayFalse $
-    knownLet KnownFstOf3 $
-    knownLet KnownSndOf3 $
-    knownLet KnownTrdOf3 $
-    knownLet KnownEQ $
-    knownLet KnownGT $
-    knownLet KnownLT $
-    knownLet KnownDelayEQ $
-    knownLet KnownDelayGT $
-    knownLet KnownDelayLT $
-    knownLet KnownFix $
-    knownLet KnownZ $
-    -- Delay Error is smaller rep then a variable.
-    -- For uniswap contract the binding resulted in smaller fees, even size increased.
-    rename (mkRen $ VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS . VS) t >>== \k -> case k of
-        Right x                -> Free x
-        Left KnownId           -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ)))))))))))))))))))
-        Left KnownDelayId      -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))))))))))))
-        Left KnownDelayDelayId -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ)))))))))))))))))
-        Left KnownConst        -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))))))))))
-        Left KnownFlipConst    -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ)))))))))))))))
-        Left KnownTrue         -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))))))))
-        Left KnownFalse        -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ)))))))))))))
-        Left KnownDelayTrue    -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))))))
-        Left KnownDelayFalse   -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ)))))))))))
-        Left KnownFstOf3       -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))))
-        Left KnownSndOf3       -> Var (VS (VS (VS (VS (VS (VS (VS (VS (VS VZ)))))))))
-        Left KnownTrdOf3       -> Var (VS (VS (VS (VS (VS (VS (VS (VS VZ))))))))
-        Left KnownEQ           -> Var (VS (VS (VS (VS (VS (VS (VS VZ)))))))
-        Left KnownGT           -> Var (VS (VS (VS (VS (VS (VS VZ))))))
-        Left KnownLT           -> Var (VS (VS (VS (VS (VS VZ)))))
-        Left KnownDelayEQ      -> Var (VS (VS (VS (VS VZ))))
-        Left KnownDelayGT      -> Var (VS (VS (VS VZ)))
-        Left KnownDelayLT      -> Var (VS (VS VZ))
-        Left KnownFix          -> Var (VS VZ)
-        Left KnownZ            -> Var VZ
-        Left KnownDelayError   -> knownRaw KnownDelayError
-        Left KnownIFE          -> knownRaw KnownIFE
-        Left KnownTT           -> knownRaw KnownTT
-        Left KnownTrace        -> knownRaw KnownTrace
-
-knownLet :: Known -> Raw a (S n) -> Raw a n
-knownLet k = Let (knownName k) (knownRaw k)
+removeKnown = substFreeWithLet
+    (\k -> (knownName k, knownRaw k))
+    (either (\k -> Left k) (Right . Free))
 
 -- | Rewrite 'ifThenElse#' known patterns.
 --

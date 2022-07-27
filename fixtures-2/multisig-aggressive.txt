@@ -12,9 +12,9 @@ let* fix = \ f -> let* s = \ s0 x -> f (s0 s0) x in s s
      Cons! = \ arg_0 arg_1 ~ case_Nil case_Cons -> case_Cons arg_0 arg_1
      Tuple2 = \ fst snd ~ case_Tuple2 -> case_Tuple2 fst snd
      Just = \ justArg ~ case_Just case_Nothing -> case_Just justArg
+     True = \ ~ -> const
      False = \ ~ true4 false4 -> false4
      ~False = \ ~ -> False
-     True = \ ~ -> const
      ~True = \ ~ -> True
      fUnsafeFromDataTxId_cunsafeFromBuiltinData = \ d -> let* tup! = unConstrData# d in ifThenElse# ! (equalsInteger_0 (fstPair!! tup!)) (\ ~ -> unBData# (headList# ! (sndPair!! tup!))) (\ ~ -> ERROR) !
      fUnsafeFromDataTxOutRef_cunsafeFromBuiltinData =
