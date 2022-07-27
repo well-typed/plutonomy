@@ -13,6 +13,7 @@ import Data.Kind          (Type)
 import Data.Sequence      (Seq)
 import Data.String        (IsString (..))
 import Data.Text          (Text)
+import Data.Void          (Void, absurd)
 import PlutusCore.Data    (Data (..))
 import PlutusCore.Default (DefaultFun (..))
 
@@ -23,6 +24,7 @@ import Plutonomy.Constant
 import Plutonomy.Known    (pattern RawFix)
 import Plutonomy.Name
 import Plutonomy.Raw      (Raw)
+import Plutonomy.Raw.Lets
 import Subst
 
 import qualified Plutonomy.Raw as Raw
@@ -573,24 +575,33 @@ tt_ = Defn (Constant (mkConstant ()))
 
 -- | Convert 'Term' to 'Raw'.
 toRaw :: Term a n -> Raw a n
-toRaw t =
-    rawLet "fix"       (RawFix "f" "s" "s0" "x") $
-    rawLet "fstPair!!" (Raw.Force $ Raw.Force $ Raw.Builtin FstPair) $
-    rawLet "sndPair!!" (Raw.Force $ Raw.Force $ Raw.Builtin SndPair) $
-    id t'
-  where
-    t' = rename (mkRen $ VS . VS . VS) (toRaw' t) >>== \aux -> case aux of
-        Aux a         -> Raw.Free a
-        AuxFix        -> Raw.Var (VS (VS VZ))
-        AuxE1 E_Fst   -> Raw.Var (VS VZ)
-        AuxE1 E_Snd   -> Raw.Var VZ
-        AuxE1 E_IData -> Raw.Builtin IData
-        AuxE1 E_BData -> Raw.Builtin BData
+toRaw t = substFreeWithLet f g (toRaw' t) where
+    f :: Aux Void -> (Name, Raw a n)
+    f (Aux x)   = absurd x
+    f AuxFix    = ("fix", RawFix "f" "s" "s0" "x")
+    f (AuxE1 e) = (elim1name e, elim1raw e)
 
-    rawLet :: Name -> Raw a n -> Raw a (S n) -> Raw a n
-    rawLet name term s
-        | Just s' <- bound unusedVar s = s'
-        | otherwise                    = Raw.Let name term s
+    g :: Aux a -> Either (Aux Void) (Raw a n)
+    g (Aux a) = Right (Raw.Free a)
+    g AuxFix  = Left AuxFix
+    g (AuxE1 e) = if elim1isbig e then Left (AuxE1 e) else Right (elim1raw e)
+
+    elim1name :: Elim1 -> Name
+    elim1name E_Fst   = "fstPair!!"
+    elim1name E_Snd   = "sndPair!!"
+    elim1name E_IData = "idata"
+    elim1name E_BData = "bdata"
+
+    elim1raw :: Elim1 -> Raw a n
+    elim1raw E_Fst   = Raw.Force $ Raw.Force $ Raw.Builtin FstPair
+    elim1raw E_Snd   = Raw.Force $ Raw.Force $ Raw.Builtin SndPair
+    elim1raw E_IData = Raw.Builtin IData
+    elim1raw E_BData = Raw.Builtin BData
+
+    elim1isbig :: Elim1 -> Bool
+    elim1isbig e = case elim1raw e of
+        Raw.Builtin _ -> False
+        _             -> True
 
 toRaw' :: Term a n -> Raw (Aux a) n
 toRaw' Error          = Raw.Error
@@ -601,6 +612,7 @@ data Aux a
     = Aux a
     | AuxFix
     | AuxE1 Elim1
+  deriving (Eq, Ord, Show)
 
 elimToRaw :: Elim a n -> Raw.Arg (Aux a) n
 elimToRaw (App t) = Raw.ArgTerm (toRaw' t)
