@@ -16,22 +16,22 @@ import qualified Data.Map.Strict  as Map
 
 -- Weakening
 --
--- This variant uses @WkId :: Wk n n@.
--- the @WkNil :: Wk Z Z@ would be better for proofs,
--- but the @WkId@ variant allows to define category instance,
--- i.e. having identity weakening without matching on @n@.
+-- A variant where 'WkId' is a constructor.
 --
 data Wk n m where
     WkId   :: Wk n n
-    WkLift :: Wk n m -> Wk (S n) (S m)
-    WkSkip :: Wk n m -> Wk n (S m)
+    WkLess :: Wk' n m -> Wk n m
 
-unliftWk' :: forall n m r. Wk (S n) m -> (forall p. S p ~ m => Wk n p -> r) -> r
-unliftWk' WkId        k = k WkId
-unliftWk' (WkLift wk) k = k wk
-unliftWk' (WkSkip wk) k = unliftWk' wk $ \wk' -> k (WkSkip wk')
+data Wk' n m where
+    Wk     ::            Wk' n     (S n)
+    WkSkip :: Wk' n m -> Wk' n     (S m)
+    WkKeep :: Wk' n m -> Wk' (S n) (S m)
 
--- Removes the first 'WkLift'.
+wkKeep :: Wk n m -> Wk (S n) (S m)
+wkKeep WkId        = WkId
+wkKeep (WkLess wk) = WkLess (WkKeep wk)
+
+-- Removes the first 'WkKeep'.
 --
 -- See a note for 'addL', the type for this function would
 -- also be more complicated, as a value is actually removed from somewhere
@@ -40,20 +40,38 @@ unliftWk' (WkSkip wk) k = unliftWk' wk $ \wk' -> k (WkSkip wk')
 unliftWk :: Wk (S n) (S m) -> Wk n m
 unliftWk wk = unliftWk' wk id
 
+unliftWk' :: forall n m r. Wk (S n) m -> (forall p. S p ~ m => Wk n p -> r) -> r
+unliftWk' WkId        k = k WkId
+unliftWk' (WkLess wk) k = unliftWk'' wk $ \wk' -> k (WkLess wk')
+
+unliftWk'' :: forall n m r. Wk' (S n) m -> (forall p. S p ~ m => Wk' n p -> r) -> r
+unliftWk'' Wk k = k Wk
+unliftWk'' (WkKeep wk) k = k wk
+unliftWk'' (WkSkip wk) k = unliftWk'' wk $ \wk' -> k (WkSkip wk')
+
+composeWk' :: Wk' a b -> Wk' b c -> Wk' a c
+composeWk' wk          Wk           = WkSkip wk
+composeWk' wk          (WkSkip wk') = WkSkip (composeWk' wk wk')
+composeWk' Wk          (WkKeep wk') = WkSkip wk'
+composeWk' (WkSkip wk) (WkKeep wk') = WkSkip (composeWk' wk wk')
+composeWk' (WkKeep wk) (WkKeep wk') = WkKeep (composeWk' wk wk')
+
 instance C.Category Wk where
     id = WkId
 
     WkId      . wk'        = wk'
-    WkSkip wk . wk'        = WkSkip (wk C.. wk')
-    WkLift wk . WkId       = WkLift wk
-    WkLift wk . WkSkip wk' = WkSkip (wk C.. wk')
-    WkLift wk . WkLift wk' = WkLift (wk C.. wk')
+    wk        . WkId       = wk
+    WkLess wk . WkLess wk' = WkLess (composeWk' wk' wk)
 
 -- Weakening can be converted to renaming.
 wkToRen :: Wk n m -> Ren n m
 wkToRen WkId        = idRen
-wkToRen (WkLift wk) = liftRen (wkToRen wk)
-wkToRen (WkSkip wk) = skipRen (wkToRen wk)
+wkToRen (WkLess wk) = wkToRen' wk
+
+wkToRen' :: Wk' n m -> Ren n m
+wkToRen' Wk          = skipRen idRen
+wkToRen' (WkSkip wk) = skipRen (wkToRen' wk)
+wkToRen' (WkKeep wk) = liftRen (wkToRen' wk)
 
 -------------------------------------------------------------------------------
 -- Lets state
@@ -115,8 +133,8 @@ data Add m (p :: Nat) (q :: Nat) where
 -- * 'addL' is used when we add new let-bindings
 --
 addL :: Add m p q -> (Add m (S p) (S q), Wk q (S q))
-addL AZ     = (AZ, WkSkip WkId)
-addL (AS a) = let (a', wk') = addL a in (AS a', WkLift wk')
+addL AZ     = (AZ, WkLess Wk)
+addL (AS a) = let (a', wk') = addL a in (AS a', wkKeep wk')
 
 -- | Using @Add m p q@ we can map @Var p@ to @Var q@
 addWk :: Add m p q -> Var p -> Var q
@@ -208,7 +226,7 @@ withLets f t0 = case go idLets t0 of
         Ret (unliftWk wk1) (Lets xs add wk mk) (Lam n t') }
     go lets (Let n t s) =
         case go lets             t                            of { Ret wk1 lets1 t' ->
-        case go (liftLets lets1) (wkToRen (WkLift wk1) <@> s) of { Ret wk2 (Lets xs (AS add) wk mk) s' ->
+        case go (liftLets lets1) (wkToRen (wkKeep wk1) <@> s) of { Ret wk2 (Lets xs (AS add) wk mk) s' ->
         Ret (wk1 C.>>> unliftWk wk2) (Lets xs add wk mk) (Let n (wkToRen (unliftWk wk2) <@> t') s') }}
     go lets (Delay t) =
         case go lets t of Ret wk lets' t' -> Ret wk lets' (Delay t')
