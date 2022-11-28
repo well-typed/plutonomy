@@ -48,6 +48,13 @@ common comm
     TypeOperators
     ViewPatterns
 
+flag CHaP
+  description:
+    Use Cardano Haskell package repository
+
+  manual:      True
+  default:     False
+
 flag plutus-1efbb276e
   description:
     Assume plutus version 1efbb276ef1a10ca6961d0fd32e6141e9798bd11
@@ -111,16 +118,16 @@ library
 
   -- GHC-boot libraries
   build-depends:
-    , base          ^>=4.14
-    , bytestring    ^>=0.10.12.0
+    , base          ^>=4.14 || ^>=4.16.3.0
+    , bytestring    ^>=0.10.12.0 || ^>=0.11.3.0
     , containers    ^>=0.6.2.1
     , filepath      ^>=1.4.2.1
     , text          ^>=1.2.3.0
     , transformers  ^>=0.5.6.2
 
   build-depends:
-    , fin            ^>=0.1.1
-    , lens           ^>=4.19.2
+    , fin            ^>=0.1.1    || ^>=0.2.1
+    , lens           ^>=4.19.2   || ^>=5.2
     , prettyprinter  ^>=1.7.0
     , some           ^>=1.0.2
     , strict         ^>=0.4.0.1
@@ -131,10 +138,16 @@ library
   -- plutus dependencies: no version bounds
   build-depends:
     , plutus-core
-    , plutus-ledger-api
     , plutus-tx
 
+  if !flag(CHaP)
+    -- more recent plutus-ledger-api doesn't have Script newtypes
+    build-depends: plutus-ledger-api
+
   if flag(plutus-ledger)
+    if flag(CHaP)
+      build-depends: unbuildable-plutus-ledger-not-on-CHaP
+
     build-depends:   plutus-ledger
     exposed-modules: Plutonomy.TypedScripts
 
@@ -143,19 +156,33 @@ library
 
   x-docspec-options: -XOverloadedStrings -XDataKinds -XTypeApplications
 
+  -- only one flag can be one at once.
   if True
+    if flag(CHaP)
+      if flag(plutus-1efbb276e) || flag(plutus-4710dff2e) || flag(plutus-f680ac697)
+        build-depends: unbuildable-multiple-plutus-version-flags-on
+
     if flag(plutus-1efbb276e)
-      if (flag(plutus-4710dff2e) || flag(plutus-f680ac697))
+      if (flag(plutus-4710dff2e) || flag(plutus-f680ac697)) || flag(CHaP)
         build-depends: unbuildable-multiple-plutus-version-flags-on
 
-    else
-      if (flag(plutus-4710dff2e) && flag(plutus-f680ac697))
+    if flag(plutus-4710dff2e)
+      if (flag(plutus-1efbb276e) || flag(plutus-f680ac697)) || flag(CHaP)
         build-depends: unbuildable-multiple-plutus-version-flags-on
 
-    if ((!flag(plutus-1efbb276e) && !flag(plutus-4710dff2e)) && !flag(plutus-f680ac697))
+    if flag(plutus-f680ac697)
+      if (flag(plutus-1efbb276e) || flag(plutus-4710dff2e)) || flag(CHaP)
+        build-depends: unbuildable-multiple-plutus-version-flags-on
+
+  -- one flag should be enabled
+    if !(flag(CHaP) || flag(plutus-1efbb276e) || flag(plutus-4710dff2e) || flag(plutus-f680ac697))
       build-depends: unbuildable-no-plutus-version-flag
 
+  -- CPP of flags
   if True
+    if flag(CHaP)
+      cpp-options: -DPLUTUS_VER=4 -DPLUTUS_CHAP
+
     if flag(plutus-1efbb276e)
       cpp-options: -DPLUTUS_VER=1
 
@@ -180,6 +207,9 @@ test-suite plutonomy-tests
     , tasty
 
   if True
+    if flag(CHaP)
+      cpp-options: -DPLUTUS_VER=4 -DPLUTUS_CHAP
+
     if flag(plutus-1efbb276e)
       cpp-options: -DPLUTUS_VER=1
 

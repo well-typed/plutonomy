@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.15.20220620
+# version: 0.15.202211107
 #
-# REGENDATA ("0.15.20220620",["github","--config","cabal.1efbb276e.haskell-ci","--project","cabal.1efbb276e.project","-o",".github/workflows/haskell-ci.1efbb276e.yml"])
+# REGENDATA ("0.15.202211107",["github","--config","cabal.1efbb276e.haskell-ci","--project","cabal.1efbb276e.project","-o",".github/workflows/haskell-ci.1efbb276e.yml"])
 #
 name: Haskell-CI 1efbb276e
 on:
@@ -44,7 +44,7 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends gnupg ca-certificates dirmngr curl git software-properties-common libtinfo5
           mkdir -p "$HOME/.ghcup/bin"
-          curl -sL https://downloads.haskell.org/ghcup/0.1.17.8/x86_64-linux-ghcup-0.1.17.8 > "$HOME/.ghcup/bin/ghcup"
+          curl -sL https://downloads.haskell.org/ghcup/0.1.18.0/x86_64-linux-ghcup-0.1.18.0 > "$HOME/.ghcup/bin/ghcup"
           chmod a+x "$HOME/.ghcup/bin/ghcup"
           "$HOME/.ghcup/bin/ghcup" install ghc "$HCVER" || (cat "$HOME"/.ghcup/logs/*.* && false)
           "$HOME/.ghcup/bin/ghcup" install cabal 3.6.2.0 || (cat "$HOME"/.ghcup/logs/*.* && false)

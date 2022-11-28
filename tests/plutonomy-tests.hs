@@ -2,8 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main (main) where
 
+#if PLUTUS_VER <4
 import Plutus.V1.Ledger.Crypto (PubKeyHash (..))
-import Test.Tasty              (defaultMain, testGroup)
+#else
+import PlutusLedgerApi.V1.Crypto (PubKeyHash (..))
+#endif
+
+import Test.Tasty (defaultMain, testGroup)
 
 import Plutonomy      (validatorToRaw)
 import Plutonomy.Test
@@ -21,11 +26,17 @@ main = defaultMain $ testGroup "plutonomy"
         , toUnoptSize   = (2923,2432)
 #elif PLUTUS_VER == 3
         , toUnoptSize   = (2651,2210)
+#elif PLUTUS_VER == 4
+        , toUnoptSize   = (2714,2293)
 #else
         , toUnoptSize   = (0,0)
 #endif
 
-#if PLUTUS_VER == 3
+#if PLUTUS_VER == 4
+        , toOptSize     = (1873,1664) -- 75% of original
+        , toAggSize     = (1875,1634)
+
+#elif PLUTUS_VER == 3
         -- plutus-tx makes our life harder: https://github.com/input-output-hk/plutus/issues/4578
         , toOptSize     = (1870,1661) -- 75% of original
         , toAggSize     = (1872,1632)
@@ -41,6 +52,8 @@ main = defaultMain $ testGroup "plutonomy"
         , toFixturesDir = "fixtures-2"
 #elif PLUTUS_VER == 3
         , toFixturesDir = "fixtures-3"
+#elif PLUTUS_VER == 4
+        , toFixturesDir = "fixtures-4"
 #else
         , toFixturesDir = error "Invalid configuration"
 #endif

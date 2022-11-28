@@ -36,8 +36,10 @@ as it uses names for binders instead of de Bruijn indices.
 
 plutonomy currently supports two plutus versions,
 identified via their git commit hashes.
+There is also partial support for [CHaP](https://input-output-hk.github.io/cardano-haskell-packages/) versions of plutus-core.
 You need to toggle one of the flags:
 
+- CHaP
 - plutus-1efbb276e
 - plutus-4710dff2e
 - plutus-f680ac697 (cardano-node-1.35.1)

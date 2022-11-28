@@ -14,8 +14,6 @@ module Plutonomy.UPLC (
 
 import Control.Lens              (Lens', lens, over, view)
 import Data.Text                 (Text)
-import Plutus.V1.Ledger.Api      (MintingPolicy (..), StakeValidator (..), Validator (..))
-import Plutus.V1.Ledger.Scripts  (Script (..))
 import PlutusCore.Default        (DefaultFun, DefaultUni)
 import Prettyprinter.Render.Text (renderIO, renderStrict)
 import System.IO                 (stdout)
@@ -23,6 +21,11 @@ import System.IO                 (stdout)
 #ifdef VERSION_plutus_ledger
 import Data.Coerce                     (coerce)
 import Ledger.Typed.Scripts.Validators (TypedValidator, unsafeMkTypedValidator, validatorScript)
+#endif
+
+#if PLUTUS_VER <4
+import Plutus.V1.Ledger.Api      (MintingPolicy (..), StakeValidator (..), Validator (..))
+import Plutus.V1.Ledger.Scripts  (Script (..))
 #endif
 
 import qualified PlutusTx.Code     as PlutusTx
@@ -69,6 +72,7 @@ instance (uni ~ DefaultUni, fun ~ DefaultFun) => HasUPLC (PlutusTx.CompiledCodeI
                 mempty  -- coverage index is gone
 #endif
 
+#if PLUTUS_VER <4
 instance HasUPLC Validator where
     uplc f (Validator s) = Validator <$> uplc f s
 
@@ -80,6 +84,7 @@ instance HasUPLC StakeValidator where
 
 instance HasUPLC Script where
     uplc f (Script s) = Script <$> uplc f s
+#endif
 
 -- https://github.com/input-output-hk/plutus-apps/issues/74
 #ifdef VERSION_plutus_ledger

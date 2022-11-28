@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 -- | Multiple signatures contract
@@ -5,9 +6,13 @@
 -- Similar to one in plutus-use-cases.
 module MultiSig where
 
-import Plutus.V1.Ledger.Api      (Validator)
+#if PLUTUS_VER <4
 import Plutus.V1.Ledger.Contexts (ScriptContext (scriptContextTxInfo), txSignedBy)
 import Plutus.V1.Ledger.Crypto   (PubKeyHash)
+#else
+import PlutusLedgerApi.V1.Contexts (ScriptContext(scriptContextTxInfo), txSignedBy)
+import PlutusLedgerApi.V1.Crypto   (PubKeyHash)
+#endif
 
 import qualified PlutusTx
 import qualified PlutusTx.Prelude as Pl
@@ -55,5 +60,5 @@ validator' ms = Plutonomy.mkValidatorScript
     ($$(PlutusTx.compile [|| validate ||]) `PlutusTx.applyCode` PlutusTx.liftCode ms)
 
 -- | Plutus validator
-validator :: MultiSig -> Validator
-validator = Plutonomy.optimizeUPLC . Plutonomy.validatorToPlutus . validator'
+-- validator :: MultiSig -> Validator
+-- validator = Plutonomy.optimizeUPLC . Plutonomy.validatorToPlutus . validator'

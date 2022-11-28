@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -- | Conversions between @plutus-core@ and @plutonomy@ terms.
 module Plutonomy.Conversion (
     fromUPLC,
@@ -5,21 +6,33 @@ module Plutonomy.Conversion (
 ) where
 
 import Control.Monad      (void)
+import Data.Text          (Text)
 import Data.Void          (Void)
 import PlutusCore.Default (DefaultFun, DefaultUni)
 import PlutusCore.Quote   (Quote, freshName, runQuote, runQuoteT)
-import Subst              (Nat (Z), Var (..), instantiate1, absurdVar, vacuousFree)
+import Subst              (Nat (Z), Var (..), absurdVar, instantiate1, vacuousFree)
+
+#if PLUTUS_VER >=4
+import Control.Lens (view)
+#endif
 
 import qualified UntypedPlutusCore as UPLC
 
 import Plutonomy.Constant
 import Plutonomy.Name
-import Plutonomy.Raw
 import Plutonomy.PlutusExtras
+import Plutonomy.Raw
 
 -------------------------------------------------------------------------------
 -- From
 -------------------------------------------------------------------------------
+
+nameString :: UPLC.Name -> Text
+#if PLUTUS_VER <4
+nameString = UPLC.nameString
+#else
+nameString = view UPLC.theText
+#endif
 
 class FromUPLC name where
     -- | Convert closed 'UPLC.Term' to bound @'Term' a@.
@@ -32,7 +45,7 @@ instance FromUPLC UPLC.Name where
         go :: (UPLC.Name -> Var n) -> UPLC.Term UPLC.Name DefaultUni DefaultFun ann -> Raw a n
         go  ctx (UPLC.Var _ann x)      = Var (ctx x)
         go  ctx (UPLC.Apply _ann f t)  = App (go ctx f) (go ctx t)
-        go  ctx (UPLC.LamAbs _ann n t) = Lam (Name (UPLC.nameString n)) $
+        go  ctx (UPLC.LamAbs _ann n t) = Lam (Name (nameString n)) $
             go (\n' -> if n == n' then VZ else VS (ctx n')) t
         go  ctx (UPLC.Force _ann t)    = Force (go ctx t)
         go  ctx (UPLC.Delay _ann t)    = Delay (go ctx t)
