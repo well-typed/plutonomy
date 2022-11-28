@@ -63,7 +63,7 @@ builtinArity EqualsData               = 2  -- [ data, data ] -> bool
 builtinArity MkPairData               = 2  -- [ data, data ] -> pair(data, data)
 builtinArity MkNilData                = 1  -- [ unit ] -> list(data)
 builtinArity MkNilPairData            = 1  -- [ unit ] -> list(pair(data, data))
-#if PLUTUS_VER == 3
+#if PLUTUS_VER >=3
 builtinArity VerifyEd25519Signature          = 3  -- [ bytestring, bytestring, bytestring ] -> bool
 builtinArity VerifyEcdsaSecp256k1Signature   = 3  -- [ bytestring, bytestring, bytestring ] -> bool
 builtinArity VerifySchnorrSecp256k1Signature = 3  -- [ bytestring, bytestring, bytestring ] -> bool

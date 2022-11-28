@@ -230,7 +230,7 @@ data Arg a n
 peelApp
     :: Raw a n
     -> (Raw a n, [Arg a n])
-peelApp = fmap ($[]) . go where
+peelApp = fmap ($ []) . go where
     go (App f x) = case go f of
         ~(f', xs) -> (f', xs . (ArgTerm x :))
     go (Force t) = case go t of
