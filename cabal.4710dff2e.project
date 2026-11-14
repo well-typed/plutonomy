@@ -15,6 +15,7 @@ constraints: aeson <1.6
 constraints: hedgehog <1.1
 constraints: protolude <0.3.1
 constraints: algebraic-graphs <0.7
+constraints: any.alex <3.3
 
 ----------------------------------------------------------------------------
 -- Plutus dependencies: 2022-01-08
