@@ -10,11 +10,12 @@ particularly aggressive optimisation level, the optimiser can
 perform certain transformations that may not preserve the
 semantics.
 
-Any use of the library as well as feedback is welcome, but due
-to time constraints, we cannot guarantee any level
-of unpaid support.  Please contact Well-Typed via email to
-[info@well-typed.com](mailto:info@well-typed.com) if you are
-interested in commercial support or funding development of the library.
+> [!WARNING]
+> This library is no longer being maintained. Use of the library as well as
+> feedback is welcome, but Well-Typed cannot guarantee any level of unpaid
+> maintenance or support. Please contact us via email to info@well-typed.com if
+> you are interested in commercial support or funding development of the
+> library.
 
 ## Usage
 
